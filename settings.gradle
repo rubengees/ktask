@@ -1,0 +1,1 @@
+include ':ktask', 'ktask-retrofit', 'ktask-android', 'sample-common', 'sample', ':sample-android'

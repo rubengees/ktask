@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Trending Kotlin</string>
+
+    <string name="owner">by %s</string>
+
+    <string name="error_action_retry">Retry</string>
+    <string name="error_unknown">An unknown error occurred.</string>
+</resources>

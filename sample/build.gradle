@@ -1,0 +1,16 @@
+apply plugin: "kotlin"
+apply plugin: 'application'
+
+mainClassName = 'com.rubengees.ktask.sample.Main'
+
+dependencies {
+    compile deps.kotlinStdlib
+
+    compile deps.retrofit
+    compile deps.retrofitMoshi
+    compile deps.moshi
+
+    compile project(':ktask')
+    compile project(':ktask-retrofit')
+    compile project(':sample-common')
+}

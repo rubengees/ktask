@@ -1,0 +1,49 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+
+    defaultConfig {
+        applicationId "com.rubengees.ktask.sample.android"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode rootProject.ext.versionCode
+        versionName rootProject.ext.version
+
+        vectorDrawables.useSupportLibrary = true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+}
+
+dependencies {
+    compile deps.kotlinStdlib
+    compile deps.supportAppCompat
+    compile deps.supportRecyclerView
+    compile deps.supportCardView
+
+    compile deps.retrofit
+    compile deps.retrofitMoshi
+    compile deps.moshi
+
+    compile deps.kotterknife
+
+    debugCompile deps.leakCanary
+    releaseCompile deps.leakCanaryNoOp
+
+    compile project(':ktask')
+    compile project(':ktask-android')
+    compile project(':ktask-retrofit')
+    compile project(':sample-common')
+}
