@@ -21,8 +21,7 @@ import com.rubengees.ktask.base.Task
  * resumed or the fragment is not attached, no results are delivered. Moreover it destroys itself automatically, if the
  * Activity finishes. A call to [cancel] in onDestroy is not necessary.
  *
- * Unlike other tasks, a current execution is not canceled, if [execute] is invoked again. This is to make the API more
- * fluent.
+ * Note that you have to pass the same [innerTask] if you reassign the task after an orientation change.
  *
  * @param I The type of input.
  * @param O The type of output.
@@ -56,6 +55,11 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
         }
     }
 
+    /**
+     * Constructor for binding the task to an [FragmentActivity].
+     *
+     * @param tag The tag of this task. This has to be unique.
+     */
     @SuppressLint("CommitTransaction")
     constructor(context: FragmentActivity, innerTask: BaseTask<I, O>, tag: String) {
         this.context = context
@@ -109,6 +113,11 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
         }
     }
 
+    /**
+     * Constructor for binding the task to a [Fragment].
+     *
+     * @param tag The tag of this task. This has to be unique.
+     */
     constructor(context: Fragment, innerTask: BaseTask<I, O>, tag: String) {
         this.context = context.activity
 
@@ -156,6 +165,11 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
         }
     }
 
+    /**
+     * Convenience constructor for binding this activity to a [View].
+     *
+     * @param tag The tag of this task. This has to be unique.
+     */
     constructor(context: View, innerTask: BaseTask<I, O>, tag: String) :
             this(findActivityForView(context), innerTask, tag)
 
