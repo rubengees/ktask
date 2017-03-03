@@ -10,11 +10,12 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import butterknife.bindView
-import com.rubengees.ktask.android.AndroidLifecycleTask
-import com.rubengees.ktask.operation.CacheTask
-import com.rubengees.ktask.retrofit.RetrofitTask
+import com.rubengees.ktask.android.bindToLifecycle
+import com.rubengees.ktask.base.Task
+import com.rubengees.ktask.retrofit.retrofitTask
 import com.rubengees.ktask.sample.RepositoryInfo
 import com.rubengees.ktask.sample.Utils
+import com.rubengees.ktask.util.TaskBuilder
 import retrofit2.Call
 
 /**
@@ -29,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var adapter: RepositoryAdapter
-    private lateinit var task: AndroidLifecycleTask<Call<RepositoryInfo>, RepositoryInfo>
+    private lateinit var task: Task<Call<RepositoryInfo>, RepositoryInfo>
 
     private val progress: SwipeRefreshLayout by bindView(R.id.progress)
     private val content: RecyclerView by bindView(R.id.content)
@@ -44,24 +45,31 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         adapter = RepositoryAdapter()
-        task = AndroidLifecycleTask(this, CacheTask(RetrofitTask()), TASK_TAG)
+        task = TaskBuilder.retrofitTask<RepositoryInfo>()
+                .cache()
+                .bindToLifecycle(this)
+                .onInnerStart {
+                    content.visibility = View.INVISIBLE
+                    errorContainer.visibility = View.INVISIBLE
+                    progress.isRefreshing = true
+                }
+                .onSuccess {
+                    content.visibility = View.VISIBLE
+
+                    adapter.replace(it.repositories)
+                }
+                .onError {
+                    errorContainer.visibility = View.VISIBLE
+                    errorText.text = it.message ?: getString(R.string.error_unknown)
+                }
+                .onFinish {
+                    progress.isRefreshing = false
+                }
+                .build()
 
         initViews()
 
-        task.onInnerStart {
-            content.visibility = View.INVISIBLE
-            errorContainer.visibility = View.INVISIBLE
-            progress.isRefreshing = true
-        }.onSuccess {
-            content.visibility = View.VISIBLE
-
-            adapter.replace(it.repositories)
-        }.onError {
-            errorContainer.visibility = View.VISIBLE
-            errorText.text = it.message ?: getString(R.string.error_unknown)
-        }.onFinish {
-            progress.isRefreshing = false
-        }.execute(MainApplication.api.mostStarredRepositories(Utils.query()))
+        task.execute(MainApplication.api.mostStarredRepositories(Utils.query()))
     }
 
     private fun initViews() {
