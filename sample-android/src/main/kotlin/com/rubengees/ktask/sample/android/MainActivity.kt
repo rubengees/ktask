@@ -48,7 +48,7 @@ class MainActivity : AppCompatActivity() {
 
         initViews()
 
-        task.onStart {
+        task.onInnerStart {
             content.visibility = View.INVISIBLE
             errorContainer.visibility = View.INVISIBLE
             progress.isRefreshing = true

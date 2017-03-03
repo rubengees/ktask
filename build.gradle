@@ -18,20 +18,20 @@ def kotterknifeVersion = '0.1.0-SNAPSHOT'
 def leakCanaryVersion = '1.5'
 
 ext.deps = [
-        kotlinStdlib: "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion",
-        supportAppCompat: "com.android.support:appcompat-v7:$supportLibraryVersion",
-        supportFragment: "com.android.support:support-fragment:$supportLibraryVersion",
+        kotlinStdlib       : "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion",
+        supportAppCompat   : "com.android.support:appcompat-v7:$supportLibraryVersion",
+        supportFragment    : "com.android.support:support-fragment:$supportLibraryVersion",
         supportRecyclerView: "com.android.support:recyclerview-v7:$supportLibraryVersion",
-        supportCardView: "com.android.support:cardview-v7:$supportLibraryVersion",
+        supportCardView    : "com.android.support:cardview-v7:$supportLibraryVersion",
 
-        retrofit: "com.squareup.retrofit2:retrofit:$retrofitVersion",
-        retrofitMoshi: "com.squareup.retrofit2:converter-moshi:$retrofitVersion",
-        moshi: "com.squareup.moshi:moshi:$moshiVersion",
+        retrofit           : "com.squareup.retrofit2:retrofit:$retrofitVersion",
+        retrofitMoshi      : "com.squareup.retrofit2:converter-moshi:$retrofitVersion",
+        moshi              : "com.squareup.moshi:moshi:$moshiVersion",
 
-        kotterknife: "com.jakewharton:kotterknife:$kotterknifeVersion",
+        kotterknife        : "com.jakewharton:kotterknife:$kotterknifeVersion",
 
-        leakCanary: "com.squareup.leakcanary:leakcanary-android:$leakCanaryVersion",
-        leakCanaryNoOp: "com.squareup.leakcanary:leakcanary-android-no-op:$leakCanaryVersion"
+        leakCanary         : "com.squareup.leakcanary:leakcanary-android:$leakCanaryVersion",
+        leakCanaryNoOp     : "com.squareup.leakcanary:leakcanary-android-no-op:$leakCanaryVersion"
 ]
 
 buildscript {
@@ -39,10 +39,13 @@ buildscript {
         mavenCentral()
         jcenter()
     }
+
     dependencies {
         classpath 'com.android.tools.build:gradle:2.3.0-rc1'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.0"
+        classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.9.13"
+        classpath "org.jetbrains.dokka:dokka-android-gradle-plugin:0.9.13"
     }
 }
 

@@ -1,11 +1,27 @@
 package com.rubengees.ktask.operation
 
-import com.rubengees.ktask.base.DelegateBranchTask
+import com.rubengees.ktask.base.MultiBranchTask
 import com.rubengees.ktask.base.Task
-import com.rubengees.ktask.util.TaskException
+import com.rubengees.ktask.util.FullTaskException
+import com.rubengees.ktask.util.PartialTaskException
 
 /**
- * TODO: Describe class
+ * Task for running the passed [leftInnerTask] and [rightInnerTask] in parallel.
+ *
+ * The [leftInnerTask] is defined to be started always before the [rightInnerTask].
+ * Upon completion of both tasks, the results are zipped by the provided [zipFunction] and delivered.
+ *
+ * If an error occurs in one of the tasks, the execution is immediately aborted and the error delivered.
+ * This behaviour can be altered with the [awaitLeftResultOnError] and [awaitRightResultOnError]. If one of those flags
+ * is set. The task waits for the result of specified task. In that case a
+ * [com.rubengees.ktask.util.PartialTaskException] is delivered with the data of the other task. If both tasks fail, a
+ * [com.rubengees.ktask.util.FullTaskException] is delivered.
+ *
+ * @LI The type of input of the left task.
+ * @RI The type of input of the right task.
+ * @LM The type of output of the left task.
+ * @RM The type of input of the right task.
+ * @O The type of the zipped input.
  *
  * @author Ruben Gees
  */
@@ -13,7 +29,7 @@ class ParallelTask<LI, RI, LM, RM, O>(leftInnerTask: Task<LI, LM>, rightInnerTas
                                       private val zipFunction: (LM, RM) -> O,
                                       private val awaitLeftResultOnError: Boolean = false,
                                       private val awaitRightResultOnError: Boolean = false) :
-        DelegateBranchTask<Pair<LI, RI>, O, LI, RI, LM, RM>(leftInnerTask, rightInnerTask) {
+        MultiBranchTask<Pair<LI, RI>, O, LI, RI, LM, RM>(leftInnerTask, rightInnerTask) {
 
     private var leftResult: LM? = null
     private var rightResult: RM? = null
@@ -45,11 +61,16 @@ class ParallelTask<LI, RI, LM, RM, O>(leftInnerTask: Task<LI, LM>, rightInnerTas
 
         leftInnerTask.onError {
             val safeRightResult = rightResult
+            val safeRightError = rightError
 
             if (safeRightResult != null) {
                 cancel()
 
                 finishWithError(PartialTaskException(it, safeRightResult))
+            } else if (safeRightError != null) {
+                cancel()
+
+                finishWithError(FullTaskException(safeRightError, it))
             } else {
                 if (awaitRightResultOnError) {
                     leftError = it
@@ -84,11 +105,16 @@ class ParallelTask<LI, RI, LM, RM, O>(leftInnerTask: Task<LI, LM>, rightInnerTas
 
         rightInnerTask.onError {
             val safeLeftResult = leftResult
+            val safeLeftError = leftError
 
             if (safeLeftResult != null) {
                 cancel()
 
                 finishWithError(PartialTaskException(it, safeLeftResult))
+            } else if (safeLeftError != null) {
+                cancel()
+
+                finishWithError(FullTaskException(safeLeftError, it))
             } else {
                 if (awaitLeftResultOnError) {
                     rightError = it
@@ -134,7 +160,4 @@ class ParallelTask<LI, RI, LM, RM, O>(leftInnerTask: Task<LI, LM>, rightInnerTas
         leftError = null
         rightError = null
     }
-
-    // Why, oh why can't we have generics in Exceptions? :/
-    class PartialTaskException(cause: Throwable, val partialData: Any?) : TaskException(cause)
 }

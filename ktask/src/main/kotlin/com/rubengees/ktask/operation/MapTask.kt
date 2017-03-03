@@ -1,23 +1,26 @@
 package com.rubengees.ktask.operation
 
-import com.rubengees.ktask.base.DelegateTask
+import com.rubengees.ktask.base.BranchTask
 import com.rubengees.ktask.base.Task
-import com.rubengees.ktask.util.TaskException
 
 /**
- * TODO: Describe class
+ * Task for mapping the result of the [innerTask] to another type or value, specified by the [function].
+ *
+ * @param I The type of input.
+ * @param O The type of output.
+ * @param M The type of result of the [innerTask].
  *
  * @author Ruben Gees
  */
 class MapTask<I, M, O>(innerTask: Task<I, M>, private val function: (M) -> O) :
-        DelegateTask<I, O, I, M>(innerTask) {
+        BranchTask<I, O, I, M>(innerTask) {
 
     init {
         innerTask.onSuccess {
             try {
                 finishSuccessful(function.invoke(it))
-            } catch(error: Exception) {
-                finishWithError(TaskException(error))
+            } catch(error: Throwable) {
+                finishWithError(error)
             }
         }
 

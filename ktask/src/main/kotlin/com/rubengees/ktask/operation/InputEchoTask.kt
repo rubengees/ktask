@@ -1,14 +1,21 @@
 package com.rubengees.ktask.operation
 
-import com.rubengees.ktask.base.DelegateTask
+import com.rubengees.ktask.base.BranchTask
 import com.rubengees.ktask.base.Task
 
 /**
- * TODO: Describe class
+ * Task for delivering the input back onSuccess of the passed [innerTask].
+ *
+ * The input is wrapped in an [Pair] together with the result. [Pair.first] is the input and [Pair.second] is the
+ * result.
+ * If an error occurs, the input is not passed back.
+ *
+ * @param I The type of input.
+ * @param O The type of output.
  *
  * @author Ruben Gees
  */
-class InputEchoTask<I, O>(innerTask: Task<I, O>) : DelegateTask<I, Pair<I, O>, I, O>(innerTask) {
+class InputEchoTask<I, O>(innerTask: Task<I, O>) : BranchTask<I, Pair<I, O>, I, O>(innerTask) {
 
     private var currentInput: I? = null
 

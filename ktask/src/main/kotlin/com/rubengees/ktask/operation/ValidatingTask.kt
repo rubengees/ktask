@@ -1,15 +1,20 @@
 package com.rubengees.ktask.operation
 
-import com.rubengees.ktask.base.DelegateTask
+import com.rubengees.ktask.base.BranchTask
 import com.rubengees.ktask.base.Task
 
 /**
- * TODO: Describe class
+ * Task for validating the input with the given [function] before actually executing.
+ *
+ * If the input is not valid, the [function] is expected to throw an error, which is then delivered.
+ *
+ * @param I The type of input.
+ * @param O The type of output.
  *
  * @author Ruben Gees
  */
 class ValidatingTask<I, O>(innerTask: Task<I, O>, private val function: (I) -> Unit) :
-        DelegateTask<I, O, I, O>(innerTask) {
+        BranchTask<I, O, I, O>(innerTask) {
 
     init {
         innerTask.onSuccess {

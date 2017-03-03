@@ -1,6 +1,6 @@
 package com.rubengees.ktask.retrofit
 
-import com.rubengees.ktask.base.BaseTask
+import com.rubengees.ktask.base.LeafTask
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -11,7 +11,7 @@ import java.io.IOException
  *
  * @author Ruben Gees
  */
-class RetrofitTask<O> : BaseTask<Call<O>, O>() {
+class RetrofitTask<O> : LeafTask<Call<O>, O>() {
 
     override val isWorking: Boolean
         get() = call != null

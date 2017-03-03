@@ -20,7 +20,10 @@ import com.rubengees.ktask.base.Task
 class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
 
     override val isWorking: Boolean
-        get() = workerFragment.innerTask.isWorking
+        get() = innerTask.isWorking
+
+    val innerTask: Task<I, O>
+        get() = workerFragment.innerTask
 
     private val workerFragment: RetainedWorkerFragment<I, O>
     private var context: Activity?
@@ -37,8 +40,7 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
                 context = context.baseContext
             }
 
-            throw IllegalArgumentException("The passed View must reside in a FragmentActivity " +
-                    "(or AppcompatActivity)")
+            throw IllegalArgumentException("The passed View must reside in a FragmentActivity (or AppcompatActivity)")
         }
     }
 
@@ -66,7 +68,7 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle?) {}
 
             override fun onActivityDestroyed(activity: Activity) {
-                if (activity == context) {
+                if (activity === context) {
                     if (activity.isChangingConfigurations) {
                         retainingDestroy()
                     } else {
@@ -109,7 +111,7 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
 
         val lifecycleCallbacks = object : FragmentManager.FragmentLifecycleCallbacks() {
             override fun onFragmentDestroyed(fragmentManager: FragmentManager, fragment: Fragment) {
-                if (fragment == context) {
+                if (fragment === context) {
                     if (fragment.activity.isChangingConfigurations) {
                         retainingDestroy()
                     } else {
@@ -138,23 +140,26 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
         }
     }
 
-    constructor(context: View, innerTask: Task<I, O>, tag: String) :
-            this(findActivityForView(context), innerTask, tag)
+    constructor(context: View, innerTask: Task<I, O>, tag: String) : this(findActivityForView(context), innerTask, tag)
+
+    override fun onInnerStart(callback: () -> Unit) = this.apply { innerTask.onInnerStart(callback) }
 
     override fun execute(input: I) {
-        workerFragment.innerTask.execute(input)
+        start {
+            innerTask.execute(input)
+        }
     }
 
     override fun cancel() {
-        workerFragment.innerTask.cancel()
+        innerTask.cancel()
     }
 
     override fun reset() {
-        workerFragment.innerTask.reset()
+        innerTask.reset()
     }
 
     override fun destroy() {
-        workerFragment.innerTask.destroy()
+        innerTask.destroy()
         context = null
 
         super.destroy()
@@ -166,13 +171,7 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
         super.destroy()
     }
 
-    override fun onStart(callback: () -> Unit): Task<I, O> {
-        workerFragment.innerTask.onStart(callback)
-
-        return this
-    }
-
-    internal class RetainedWorkerFragment<I, O>(val innerTask: Task<I, O>) : Fragment() {
+    internal class RetainedWorkerFragment<I, O>(var innerTask: Task<I, O>) : Fragment() {
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
 
