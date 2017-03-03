@@ -74,10 +74,6 @@ class CacheTask<I, O>(innerTask: Task<I, O>, cacheStrategy: CacheStrategy = Cach
             return
         }
 
-        if (isWorking) {
-            return
-        }
-
         start {
             innerTask.execute(input)
         }

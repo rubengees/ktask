@@ -13,5 +13,5 @@ package com.rubengees.ktask.base
  */
 abstract class LeafTask<I, O> : BaseTask<I, O>() {
 
-    override fun onInnerStart(callback: () -> Unit) = this.apply { startCallback = callback }
+    override fun onInnerStart(callback: (() -> Unit)?) = this.apply { startCallback = callback }
 }

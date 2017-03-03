@@ -20,11 +20,11 @@ abstract class BranchTask<I, O, TI, TO>(val innerTask: Task<TI, TO>) : BaseTask<
     override val isWorking: Boolean
         get() = innerTask.isWorking
 
-    override fun onStart(callback: () -> Unit) = this.apply { super.onStart(callback) }
-    override fun onSuccess(callback: (O) -> Unit) = this.apply { super.onSuccess(callback) }
-    override fun onError(callback: (Throwable) -> Unit) = this.apply { super.onError(callback) }
-    override fun onFinish(callback: () -> Unit) = this.apply { super.onFinish(callback) }
-    override fun onInnerStart(callback: () -> Unit) = this.apply { innerTask.onInnerStart(callback) }
+    override fun onStart(callback: (() -> Unit)?) = this.apply { super.onStart(callback) }
+    override fun onSuccess(callback: ((O) -> Unit)?) = this.apply { super.onSuccess(callback) }
+    override fun onError(callback: ((Throwable) -> Unit)?) = this.apply { super.onError(callback) }
+    override fun onFinish(callback: (() -> Unit)?) = this.apply { super.onFinish(callback) }
+    override fun onInnerStart(callback: (() -> Unit)?) = this.apply { innerTask.onInnerStart(callback) }
 
     override fun cancel() {
         innerTask.cancel()

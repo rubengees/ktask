@@ -22,20 +22,46 @@ interface Task<I, O> {
     val isWorking: Boolean
 
     /**
-     * Executes the task with the given [input].
+     * Executes the task with the given [input] if no execution is running already.
      *
      * The lifecycle callbacks are defined to be invoked in the following order:
      * - onStart
      * - onSuccess or onError
      * - onFinish
-     *
-     * If not noted otherwise, ongoing executions are cancelled upon call.
      */
     fun execute(input: I)
 
     /**
+     *  Executes the task with the given [input]. If an execution is ongoing already, it is cancelled.
+     *
+     *  This has the same effect as calling
+     *  ```
+     *  task.cancel()
+     *  task.execute(input)
+     *  ```
+     *
+     *  @see [execute]
+     */
+    fun forceExecute(input: I)
+
+    /**
+     *  Executes the task with the given [input]. The task is reset before executing.
+     *
+     *  This has the same effect as calling
+     *  ```
+     *  task.reset()
+     *  task.execute(input)
+     *  ```
+     *
+     *  @see [execute]
+     */
+    fun freshExecute(input: I)
+
+    /**
      * Cancels the task and its children if present and deletes any data, directly associated with the current
      * execution.
+     *
+     * [isWorking] should return false immediately after calling this function.
      *
      * Cancel can be invoked multiple times on a task, even if it currently not executing. In that case, nothing
      * happens.
@@ -62,21 +88,21 @@ interface Task<I, O> {
      *
      * @return This task.
      */
-    fun onStart(callback: () -> Unit): Task<I, O>
+    fun onStart(callback: (() -> Unit)?): Task<I, O>
 
     /**
      * Assigns the [callback] to be called when the task executed successfully.
      *
      * @return This task.
      */
-    fun onSuccess(callback: (O) -> Unit): Task<I, O>
+    fun onSuccess(callback: ((O) -> Unit)?): Task<I, O>
 
     /**
      * Assigns the [callback] to be called when the task failed with an error.
      *
      * @return This task.
      */
-    fun onError(callback: (Throwable) -> Unit): Task<I, O>
+    fun onError(callback: ((Throwable) -> Unit)?): Task<I, O>
 
     /**
      * Assigns the [callback] to be called when the task finished. This means, that it either executed successfully or
@@ -86,7 +112,7 @@ interface Task<I, O> {
      *
      * @return This task.
      */
-    fun onFinish(callback: () -> Unit): Task<I, O>
+    fun onFinish(callback: (() -> Unit)?): Task<I, O>
 
     /**
      * Assigns the [callback] to be called when the first [LeafTask] is started. This is the leftmost leaf in the tree
@@ -94,5 +120,5 @@ interface Task<I, O> {
      *
      * @return This task.
      */
-    fun onInnerStart(callback: () -> Unit): Task<I, O>
+    fun onInnerStart(callback: (() -> Unit)?): Task<I, O>
 }

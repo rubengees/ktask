@@ -35,11 +35,23 @@ abstract class BaseTask<I, O> : Task<I, O> {
      */
     protected var successCallback: ((O) -> Unit)? = null
 
-    override fun onStart(callback: () -> Unit) = this.apply { startCallback = callback }
-    override fun onSuccess(callback: (O) -> Unit) = this.apply { successCallback = callback }
-    override fun onError(callback: (Throwable) -> Unit) = this.apply { errorCallback = callback }
-    override fun onFinish(callback: () -> Unit) = this.apply { finishCallback = callback }
-    abstract override fun onInnerStart(callback: () -> Unit): BaseTask<I, O>
+    override fun onStart(callback: (() -> Unit)?) = this.apply { startCallback = callback }
+    override fun onSuccess(callback: ((O) -> Unit)?) = this.apply { successCallback = callback }
+    override fun onError(callback: ((Throwable) -> Unit)?) = this.apply { errorCallback = callback }
+    override fun onFinish(callback: (() -> Unit)?) = this.apply { finishCallback = callback }
+    abstract override fun onInnerStart(callback: (() -> Unit)?): BaseTask<I, O>
+
+    override fun forceExecute(input: I) {
+        cancel()
+
+        execute(input)
+    }
+
+    override fun freshExecute(input: I) {
+        reset()
+
+        execute(input)
+    }
 
     override fun destroy() {
         startCallback = null
@@ -51,14 +63,15 @@ abstract class BaseTask<I, O> : Task<I, O> {
     /**
      * Convenience function for inheritors to start the task. The logic is specified by the [action] parameter.
      *
-     * If there is an ongoing execution, it is cancelled. Furthermore the [startCallback] is invoked.
+     * The [action] is only invoked, if the task is not working (Determined by calling [isWorking]) currently.
+     * Before invoking the [action], the [startCallback] is invoked.
      */
     open protected fun start(action: () -> Unit) {
-        cancel()
+        if (!isWorking) {
+            startCallback?.invoke()
 
-        startCallback?.invoke()
-
-        action.invoke()
+            action.invoke()
+        }
     }
 
     /**
@@ -79,5 +92,18 @@ abstract class BaseTask<I, O> : Task<I, O> {
     open protected fun finishWithError(error: Throwable) {
         errorCallback?.invoke(error)
         finishCallback?.invoke()
+    }
+
+    /**
+     * Assigns the callbacks of the passed task to this one. The current ones are overridden.
+     */
+    fun copyCallbacksFrom(task: BaseTask<*, *>) {
+        if (task is BaseTask<*, *>) {
+            @Suppress("UNCHECKED_CAST")
+            successCallback = task.successCallback as ((O) -> Unit)?
+            startCallback = task.startCallback
+            finishCallback = task.finishCallback
+            errorCallback = task.errorCallback
+        }
     }
 }

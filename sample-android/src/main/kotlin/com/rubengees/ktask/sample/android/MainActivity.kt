@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
     private fun initViews() {
         progress.setColorSchemeResources(R.color.colorPrimary, R.color.colorPrimaryDark)
         progress.setOnRefreshListener {
-            refresh()
+            task.freshExecute(MainApplication.api.mostStarredRepositories(Utils.query()))
         }
 
         content.adapter = adapter
@@ -79,12 +79,7 @@ class MainActivity : AppCompatActivity() {
         errorContainer.visibility = View.INVISIBLE
 
         errorButton.setOnClickListener {
-            refresh()
+            task.freshExecute(MainApplication.api.mostStarredRepositories(Utils.query()))
         }
-    }
-
-    private fun refresh() {
-        task.reset()
-        task.execute(MainApplication.api.mostStarredRepositories(Utils.query()))
     }
 }

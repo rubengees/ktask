@@ -26,11 +26,11 @@ abstract class MultiBranchTask<I, O, LI, RI, LO, RO>(val leftInnerTask: Task<LI,
     override val isWorking: Boolean
         get() = leftInnerTask.isWorking || rightInnerTask.isWorking
 
-    override fun onStart(callback: () -> Unit) = this.apply { startCallback = callback }
-    override fun onSuccess(callback: (O) -> Unit) = this.apply { successCallback = callback }
-    override fun onError(callback: (Throwable) -> Unit) = this.apply { errorCallback = callback }
-    override fun onFinish(callback: () -> Unit) = this.apply { finishCallback = callback }
-    override fun onInnerStart(callback: () -> Unit) = this.apply { leftInnerTask.onInnerStart(callback) }
+    override fun onStart(callback: (() -> Unit)?) = this.apply { super.onStart(callback) }
+    override fun onSuccess(callback: ((O) -> Unit)?) = this.apply { super.onSuccess(callback) }
+    override fun onError(callback: ((Throwable) -> Unit)?) = this.apply { super.onError(callback) }
+    override fun onFinish(callback: (() -> Unit)?) = this.apply { super.onFinish(callback) }
+    override fun onInnerStart(callback: (() -> Unit)?) = this.apply { leftInnerTask.onInnerStart(callback) }
 
     override fun cancel() {
         leftInnerTask.cancel()
