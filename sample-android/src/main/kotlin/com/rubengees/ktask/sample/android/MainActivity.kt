@@ -25,10 +25,6 @@ import retrofit2.Call
  */
 class MainActivity : AppCompatActivity() {
 
-    private companion object {
-        private const val TASK_TAG = "tag_activity_main"
-    }
-
     private lateinit var adapter: RepositoryAdapter
     private lateinit var task: Task<Call<RepositoryInfo>, RepositoryInfo>
 
@@ -77,6 +73,7 @@ class MainActivity : AppCompatActivity() {
         progress.setOnRefreshListener {
             task.freshExecute(MainApplication.api.mostStarredRepositories(Utils.query()))
         }
+        progress.isRefreshing = task.isWorking
 
         content.adapter = adapter
         content.setHasFixedSize(true)
