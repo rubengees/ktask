@@ -10,4 +10,4 @@ package com.rubengees.ktask.util
  *
  * @author Ruben Gees
  */
-class PartialTaskException(cause: Throwable, val partialResult: Any?) : Exception(cause)
+class PartialTaskException(val innerError: Throwable, val partialResult: Any?) : Exception()

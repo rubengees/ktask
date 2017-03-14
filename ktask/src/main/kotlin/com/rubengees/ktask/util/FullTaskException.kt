@@ -9,4 +9,4 @@ package com.rubengees.ktask.util
  *
  * @author Ruben Gees
  */
-class FullTaskException(cause: Throwable, val secondCause: Throwable) : Exception(cause)
+class FullTaskException(val firstInnerError: Throwable, val secondInnerError: Throwable) : Exception()
