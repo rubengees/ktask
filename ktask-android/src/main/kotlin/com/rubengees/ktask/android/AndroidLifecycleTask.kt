@@ -5,6 +5,8 @@ import android.app.Activity
 import android.app.Application
 import android.content.ContextWrapper
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentActivity
 import android.support.v4.app.FragmentManager
@@ -12,7 +14,6 @@ import android.view.View
 import com.rubengees.ktask.base.BaseTask
 import com.rubengees.ktask.base.BranchTask
 import com.rubengees.ktask.base.MultiBranchTask
-import com.rubengees.ktask.base.Task
 
 /**
  * Task for working in a safe manner with the Android Lifecycle.
@@ -33,7 +34,7 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
     override val isWorking: Boolean
         get() = innerTask.isWorking
 
-    val innerTask: Task<I, O>
+    val innerTask: BaseTask<I, O>
         get() = workerFragment.innerTask
 
     private val workerFragment: RetainedWorkerFragment<I, O>
@@ -100,15 +101,19 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
 
         context.application.registerActivityLifecycleCallbacks(lifecycleCallbacks)
 
-        workerFragment.innerTask.onSuccess {
+        workerFragment.innerTask.onSuccess { result ->
             if (!context.isFinishing) {
-                finishSuccessful(it)
+                context.runOnUiThread {
+                    finishSuccessful(result)
+                }
             }
         }
 
-        workerFragment.innerTask.onError {
+        workerFragment.innerTask.onError { error ->
             if (!context.isFinishing) {
-                finishWithError(it)
+                context.runOnUiThread {
+                    finishWithError(error)
+                }
             }
         }
     }
@@ -152,15 +157,19 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
 
         context.activity.supportFragmentManager.registerFragmentLifecycleCallbacks(lifecycleCallbacks, true)
 
-        workerFragment.innerTask.onSuccess {
+        workerFragment.innerTask.onSuccess { result ->
             if (context.isAdded) {
-                finishSuccessful(it)
+                Handler(Looper.getMainLooper()).post {
+                    finishSuccessful(result)
+                }
             }
         }
 
-        workerFragment.innerTask.onError {
+        workerFragment.innerTask.onError { error ->
             if (context.isAdded) {
-                finishWithError(it)
+                Handler(Looper.getMainLooper()).post {
+                    finishWithError(error)
+                }
             }
         }
     }
