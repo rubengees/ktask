@@ -3,6 +3,7 @@ package com.rubengees.ktask.sample.android
 import android.app.Application
 import com.rubengees.ktask.sample.GitHubApi
 import com.squareup.leakcanary.LeakCanary
+import com.squareup.leakcanary.RefWatcher
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
@@ -16,6 +17,10 @@ class MainApplication : Application() {
 
     companion object {
         lateinit var api: GitHubApi
+            private set
+
+        lateinit var refWatcher: RefWatcher
+            private set
     }
 
     override fun onCreate() {
@@ -25,7 +30,7 @@ class MainApplication : Application() {
             return
         }
 
-        LeakCanary.install(this)
+        refWatcher = LeakCanary.install(this)
 
         val retrofit = Retrofit.Builder()
                 .baseUrl("https://api.github.com/")
