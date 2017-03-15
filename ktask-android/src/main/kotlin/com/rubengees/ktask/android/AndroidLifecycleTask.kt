@@ -40,6 +40,8 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
     private val workerFragment: RetainedWorkerFragment<I, O>
     private var context: Activity?
 
+    private val handler = Handler(Looper.getMainLooper())
+
     private companion object {
         private fun findActivityForView(view: View): FragmentActivity {
             var context = view.context
@@ -101,21 +103,8 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
 
         context.application.registerActivityLifecycleCallbacks(lifecycleCallbacks)
 
-        workerFragment.innerTask.onSuccess { result ->
-            if (!context.isFinishing) {
-                context.runOnUiThread {
-                    finishSuccessful(result)
-                }
-            }
-        }
-
-        workerFragment.innerTask.onError { error ->
-            if (!context.isFinishing) {
-                context.runOnUiThread {
-                    finishWithError(error)
-                }
-            }
-        }
+        workerFragment.innerTask.onSuccess { finishSuccessful(it) }
+        workerFragment.innerTask.onError { finishWithError(it) }
     }
 
     /**
@@ -148,8 +137,6 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
                         destroy()
                     }
 
-                    fragment.isAdded
-
                     fragmentManager.unregisterFragmentLifecycleCallbacks(this)
                 }
             }
@@ -157,25 +144,12 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
 
         context.activity.supportFragmentManager.registerFragmentLifecycleCallbacks(lifecycleCallbacks, true)
 
-        workerFragment.innerTask.onSuccess { result ->
-            if (context.isAdded) {
-                Handler(Looper.getMainLooper()).post {
-                    finishSuccessful(result)
-                }
-            }
-        }
-
-        workerFragment.innerTask.onError { error ->
-            if (context.isAdded) {
-                Handler(Looper.getMainLooper()).post {
-                    finishWithError(error)
-                }
-            }
-        }
+        workerFragment.innerTask.onSuccess { finishSuccessful(it) }
+        workerFragment.innerTask.onError { finishWithError(it) }
     }
 
     /**
-     * Convenience constructor for binding this activity to a [View].
+     * Convenience constructor for binding this task to a [View].
      *
      * @param tag The tag of this task. This has to be unique.
      */
@@ -184,8 +158,34 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
 
     override fun onInnerStart(callback: (() -> Unit)?) = this.apply { innerTask.onInnerStart(callback) }
 
+    override fun start(action: () -> Unit) {
+        if (!isWorking) {
+            safelyDeliver {
+                startCallback?.invoke()
+            }
+
+            action.invoke()
+        }
+    }
+
+    override fun finishSuccessful(result: O) {
+        safelyDeliver {
+            successCallback?.invoke(result)
+            finishCallback?.invoke()
+        }
+    }
+
+    override fun finishWithError(error: Throwable) {
+        safelyDeliver {
+            errorCallback?.invoke(error)
+            finishCallback?.invoke()
+        }
+    }
+
     override fun execute(input: I) {
-        startCallback?.invoke()
+        safelyDeliver {
+            startCallback?.invoke()
+        }
 
         innerTask.execute(input)
     }
@@ -209,6 +209,14 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
         context = null
 
         super.destroy()
+    }
+
+    private fun safelyDeliver(action: () -> Unit) {
+        context?.apply {
+            if (!this.isFinishing) {
+                handler.post { action.invoke() }
+            }
+        }
     }
 
     private fun copyCallbacks(newTask: BaseTask<*, *>, existingTask: BaseTask<*, *>) {

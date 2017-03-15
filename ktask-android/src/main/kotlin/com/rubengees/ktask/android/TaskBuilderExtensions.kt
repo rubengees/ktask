@@ -16,7 +16,6 @@ fun <I, O> TaskBuilder<I, O>.bindToLifecycle(context: Fragment,
     return TaskBuilder.task(AndroidLifecycleTask(context, build(), tag))
 }
 
-fun <I, O> TaskBuilder<I, O>.bindToLifecycle(context: View, tag: String = context.id.toString()):
-        TaskBuilder<I, O> {
+fun <I, O> TaskBuilder<I, O>.bindToLifecycle(context: View, tag: String = context.id.toString()): TaskBuilder<I, O> {
     return TaskBuilder.task(AndroidLifecycleTask(context, build(), tag))
 }
