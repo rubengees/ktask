@@ -22,8 +22,8 @@ import com.rubengees.ktask.operation.CacheTask.CacheStrategy
  *
  * @author Ruben Gees
  */
-class CacheTask<I, O>(innerTask: Task<I, O>, cacheStrategy: CacheStrategy = CacheStrategy.FULL) :
-        BranchTask<I, O, I, O>(innerTask) {
+class CacheTask<I, O, T : Task<I, O, T>>(override val innerTask: T, cacheStrategy: CacheStrategy = CacheStrategy.FULL) :
+        BranchTask<I, O, I, O, T, CacheTask<I, O, T>>() {
 
     private val shouldCacheResult = when (cacheStrategy) {
         CacheStrategy.FULL, CacheStrategy.RESULT -> true
@@ -48,17 +48,7 @@ class CacheTask<I, O>(innerTask: Task<I, O>, cacheStrategy: CacheStrategy = Cach
         private set
 
     init {
-        innerTask.onSuccess {
-            cachedResult = if (shouldCacheResult) it else null
-
-            finishSuccessful(it)
-        }
-
-        innerTask.onError {
-            cachedError = if (shouldCacheException) it else null
-
-            finishWithError(it)
-        }
+        restoreCallbacks(this)
     }
 
     override fun execute(input: I) {
@@ -86,11 +76,20 @@ class CacheTask<I, O>(innerTask: Task<I, O>, cacheStrategy: CacheStrategy = Cach
         cachedError = null
     }
 
-    override fun destroy() {
-        super.destroy()
+    override fun restoreCallbacks(from: CacheTask<I, O, T>) {
+        super.restoreCallbacks(from)
 
-        cachedResult = null
-        cachedError = null
+        innerTask.onSuccess {
+            cachedResult = if (shouldCacheResult) it else null
+
+            finishSuccessful(it)
+        }
+
+        innerTask.onError {
+            cachedError = if (shouldCacheException) it else null
+
+            finishWithError(it)
+        }
     }
 
     /**

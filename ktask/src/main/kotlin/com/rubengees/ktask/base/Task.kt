@@ -14,12 +14,16 @@ package com.rubengees.ktask.base
  *
  * @author Ruben Gees
  */
-interface Task<I, O> {
+abstract class Task<I, O, SELF : Task<I, O, SELF>> {
+
+    @Suppress("UNCHECKED_CAST")
+    protected val me: SELF
+        get() = this as SELF
 
     /**
      * Property which returns true, if the current task is working.
      */
-    val isWorking: Boolean
+    abstract val isWorking: Boolean
 
     /**
      * Executes the task with the given [input] if no execution is running already.
@@ -29,7 +33,7 @@ interface Task<I, O> {
      * - onSuccess or onError
      * - onFinish
      */
-    fun execute(input: I)
+    abstract fun execute(input: I)
 
     /**
      *  Executes the task with the given [input]. If an execution is ongoing already, it is cancelled.
@@ -42,7 +46,7 @@ interface Task<I, O> {
      *
      *  @see [execute]
      */
-    fun forceExecute(input: I)
+    abstract fun forceExecute(input: I)
 
     /**
      *  Executes the task with the given [input]. The task is reset before executing.
@@ -55,7 +59,7 @@ interface Task<I, O> {
      *
      *  @see [execute]
      */
-    fun freshExecute(input: I)
+    abstract fun freshExecute(input: I)
 
     /**
      * Cancels the task and its children if present and deletes any data, directly associated with the current
@@ -66,21 +70,28 @@ interface Task<I, O> {
      * Cancel can be invoked multiple times on a task, even if it currently not executing. In that case, nothing
      * happens.
      */
-    fun cancel()
+    abstract fun cancel()
 
     /**
      * Resets the task. This means deleting all data, not directly associated with a single execution.
      *
      * Implicitly cancels the task.
      */
-    fun reset()
+    abstract fun reset()
+
+    /**
+     * Destroys all callbacks and functions of the task, but keeps local data.
+     *
+     * Implicitly cancels the task.
+     */
+    abstract fun retainingDestroy()
 
     /**
      * Destroys the task. This means deleting all data and callbacks.
      *
      * Implicitly resets the task.
      */
-    fun destroy()
+    abstract fun destroy()
 
     /**
      * Assigns the [callback] to be called when the task is started. Unlike [onInnerStart], the callback is exactly set
@@ -88,21 +99,21 @@ interface Task<I, O> {
      *
      * @return This task.
      */
-    fun onStart(callback: (() -> Unit)?): Task<I, O>
+    abstract fun onStart(callback: (() -> Unit)?): SELF
 
     /**
      * Assigns the [callback] to be called when the task executed successfully.
      *
      * @return This task.
      */
-    fun onSuccess(callback: ((O) -> Unit)?): Task<I, O>
+    abstract fun onSuccess(callback: ((O) -> Unit)?): SELF
 
     /**
      * Assigns the [callback] to be called when the task failed with an error.
      *
      * @return This task.
      */
-    fun onError(callback: ((Throwable) -> Unit)?): Task<I, O>
+    abstract fun onError(callback: ((Throwable) -> Unit)?): SELF
 
     /**
      * Assigns the [callback] to be called when the task finished. This means, that it either executed successfully or
@@ -112,7 +123,7 @@ interface Task<I, O> {
      *
      * @return This task.
      */
-    fun onFinish(callback: (() -> Unit)?): Task<I, O>
+    abstract fun onFinish(callback: (() -> Unit)?): SELF
 
     /**
      * Assigns the [callback] to be called when the first [LeafTask] is started. This is the leftmost leaf in the tree
@@ -120,5 +131,13 @@ interface Task<I, O> {
      *
      * @return This task.
      */
-    fun onInnerStart(callback: (() -> Unit)?): Task<I, O>
+    abstract fun onInnerStart(callback: (() -> Unit)?): SELF
+
+    /**
+     * Only for internal use.
+     *
+     * Copies functions from the given [from] task to this one and re-applies the internal callbacks.
+     * This is useful, when [retainingDestroy] has been called, and this task should be re-initialized.
+     */
+    abstract fun restoreCallbacks(from: SELF)
 }

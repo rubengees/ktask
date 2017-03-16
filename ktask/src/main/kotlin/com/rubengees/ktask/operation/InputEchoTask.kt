@@ -15,28 +15,13 @@ import com.rubengees.ktask.base.Task
  *
  * @author Ruben Gees
  */
-class InputEchoTask<I, O>(innerTask: Task<I, O>) : BranchTask<I, Pair<I, O>, I, O>(innerTask) {
+class InputEchoTask<I, O, T : Task<I, O, T>>(override val innerTask: T) :
+        BranchTask<I, Pair<I, O>, I, O, T, InputEchoTask<I, O, T>>() {
 
     private var currentInput: I? = null
 
     init {
-        innerTask.onSuccess {
-            val safeInput = currentInput
-
-            if (safeInput != null) {
-                finishSuccessful(safeInput to it)
-            } else {
-                finishWithError(IllegalStateException("currentInput is null"))
-            }
-
-            currentInput = null
-        }
-
-        innerTask.onError {
-            finishWithError(it)
-
-            currentInput = null
-        }
+        restoreCallbacks(this)
     }
 
     override fun execute(input: I) {
@@ -63,5 +48,27 @@ class InputEchoTask<I, O>(innerTask: Task<I, O>) : BranchTask<I, Pair<I, O>, I, 
         super.destroy()
 
         currentInput = null
+    }
+
+    override fun restoreCallbacks(from: InputEchoTask<I, O, T>) {
+        super.restoreCallbacks(from)
+
+        innerTask.onSuccess {
+            val safeInput = currentInput
+
+            if (safeInput != null) {
+                finishSuccessful(safeInput to it)
+            } else {
+                finishWithError(IllegalStateException("currentInput is null"))
+            }
+
+            currentInput = null
+        }
+
+        innerTask.onError {
+            finishWithError(it)
+
+            currentInput = null
+        }
     }
 }

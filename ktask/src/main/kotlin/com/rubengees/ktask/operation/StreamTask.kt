@@ -17,18 +17,44 @@ import com.rubengees.ktask.base.Task
  *
  * @author Ruben Gees
  */
-class StreamTask<LI, LO, RI, RO>(leftInnerTask: Task<LI, LO>, rightInnerTask: Task<RI, RO>,
-                                 private val mapFunction: (LO) -> RI = {
-                                     @Suppress("UNCHECKED_CAST")
-                                     it as RI
-                                 }) : MultiBranchTask<LI, RO, LI, RI, LO, RO>(leftInnerTask, rightInnerTask) {
+class StreamTask<LI, LO, RI, RO, LT : Task<LI, LO, LT>, RT : Task<RI, RO, RT>>(override val leftInnerTask: LT,
+                                                                               override val rightInnerTask: RT,
+                                                                               mapFunction: (LO) -> RI = {
+                                                                                   @Suppress("UNCHECKED_CAST")
+                                                                                   it as RI
+                                                                               }) :
+        MultiBranchTask<LI, RO, LI, RI, LO, RO, LT, RT, StreamTask<LI, LO, RI, RO, LT, RT>>() {
+
+    private var mapFunction: ((LO) -> RI)? = mapFunction
 
     init {
+        restoreCallbacks(this)
+    }
+
+    override fun execute(input: LI) {
+        start {
+            leftInnerTask.execute(input)
+        }
+    }
+
+    override fun retainingDestroy() {
+        super.retainingDestroy()
+
+        mapFunction = null
+    }
+
+    override fun restoreCallbacks(from: StreamTask<LI, LO, RI, RO, LT, RT>) {
+        super.restoreCallbacks(from)
+
+        mapFunction = from.mapFunction
+
         leftInnerTask.onSuccess {
-            try {
-                rightInnerTask.execute(mapFunction.invoke(it))
-            } catch(exception: Exception) {
-                finishWithError(exception)
+            this.mapFunction?.let { function ->
+                try {
+                    rightInnerTask.execute(function.invoke(it))
+                } catch(exception: Exception) {
+                    finishWithError(exception)
+                }
             }
         }
 
@@ -42,12 +68,6 @@ class StreamTask<LI, LO, RI, RO>(leftInnerTask: Task<LI, LO>, rightInnerTask: Ta
 
         rightInnerTask.onError {
             finishWithError(it)
-        }
-    }
-
-    override fun execute(input: LI) {
-        start {
-            leftInnerTask.execute(input)
         }
     }
 }

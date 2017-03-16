@@ -13,7 +13,7 @@ package com.rubengees.ktask.base
  *
  * @author Ruben Gees
  */
-abstract class BaseTask<I, O> : Task<I, O> {
+abstract class BaseTask<I, O, SELF : BaseTask<I, O, SELF>> : Task<I, O, SELF>() {
 
     /**
      * The callback to be invoked when execution of the task starts.
@@ -35,11 +35,10 @@ abstract class BaseTask<I, O> : Task<I, O> {
      */
     protected var successCallback: ((O) -> Unit)? = null
 
-    override fun onStart(callback: (() -> Unit)?) = this.apply { startCallback = callback }
-    override fun onSuccess(callback: ((O) -> Unit)?) = this.apply { successCallback = callback }
-    override fun onError(callback: ((Throwable) -> Unit)?) = this.apply { errorCallback = callback }
-    override fun onFinish(callback: (() -> Unit)?) = this.apply { finishCallback = callback }
-    abstract override fun onInnerStart(callback: (() -> Unit)?): BaseTask<I, O>
+    override fun onStart(callback: (() -> Unit)?) = me.apply { startCallback = callback }
+    override fun onSuccess(callback: ((O) -> Unit)?) = me.apply { successCallback = callback }
+    override fun onError(callback: ((Throwable) -> Unit)?) = me.apply { errorCallback = callback }
+    override fun onFinish(callback: (() -> Unit)?) = me.apply { finishCallback = callback }
 
     override fun forceExecute(input: I) {
         cancel()
@@ -51,6 +50,13 @@ abstract class BaseTask<I, O> : Task<I, O> {
         reset()
 
         execute(input)
+    }
+
+    override fun retainingDestroy() {
+        startCallback = null
+        successCallback = null
+        errorCallback = null
+        finishCallback = null
     }
 
     override fun destroy() {
@@ -94,16 +100,8 @@ abstract class BaseTask<I, O> : Task<I, O> {
         finishCallback?.invoke()
     }
 
-    /**
-     * Assigns the callbacks of the passed task to this one. The current ones are overridden.
-     */
-    fun copyCallbacksFrom(task: BaseTask<*, *>) {
-        if (task is BaseTask<*, *>) {
-            @Suppress("UNCHECKED_CAST")
-            successCallback = task.successCallback as ((O) -> Unit)?
-            startCallback = task.startCallback
-            finishCallback = task.finishCallback
-            errorCallback = task.errorCallback
-        }
+    override fun restoreCallbacks(from: SELF) {
+        startCallback = from.startCallback
+        finishCallback = from.finishCallback
     }
 }

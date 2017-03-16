@@ -15,16 +15,15 @@ package com.rubengees.ktask.base
  *
  * @author Ruben Gees
  */
-abstract class BranchTask<I, O, TI, TO>(val innerTask: Task<TI, TO>) : BaseTask<I, O>() {
+abstract class BranchTask<I, O, TI, TO, T : Task<TI, TO, T>,
+        SELF : BranchTask<I, O, TI, TO, T, SELF>> : BaseTask<I, O, SELF>() {
+
+    abstract val innerTask: T
 
     override val isWorking: Boolean
         get() = innerTask.isWorking
 
-    override fun onStart(callback: (() -> Unit)?) = this.apply { super.onStart(callback) }
-    override fun onSuccess(callback: ((O) -> Unit)?) = this.apply { super.onSuccess(callback) }
-    override fun onError(callback: ((Throwable) -> Unit)?) = this.apply { super.onError(callback) }
-    override fun onFinish(callback: (() -> Unit)?) = this.apply { super.onFinish(callback) }
-    override fun onInnerStart(callback: (() -> Unit)?) = this.apply { innerTask.onInnerStart(callback) }
+    override fun onInnerStart(callback: (() -> Unit)?) = me.apply { innerTask.onInnerStart(callback) }
 
     override fun cancel() {
         innerTask.cancel()
@@ -34,9 +33,21 @@ abstract class BranchTask<I, O, TI, TO>(val innerTask: Task<TI, TO>) : BaseTask<
         innerTask.reset()
     }
 
-    override fun destroy() {
-        innerTask.destroy()
+    override fun retainingDestroy() {
+        super.retainingDestroy()
 
+        innerTask.retainingDestroy()
+    }
+
+    override fun destroy() {
         super.destroy()
+
+        innerTask.destroy()
+    }
+
+    override fun restoreCallbacks(from: SELF) {
+        super.restoreCallbacks(from)
+
+        innerTask.restoreCallbacks(from.innerTask)
     }
 }

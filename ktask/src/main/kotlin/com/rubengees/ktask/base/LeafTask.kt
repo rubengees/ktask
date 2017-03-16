@@ -11,7 +11,27 @@ package com.rubengees.ktask.base
  *
  * @author Ruben Gees
  */
-abstract class LeafTask<I, O> : BaseTask<I, O>() {
+abstract class LeafTask<I, O, SELF : LeafTask<I, O, SELF>> : BaseTask<I, O, SELF>() {
 
-    override fun onInnerStart(callback: (() -> Unit)?) = this.apply { startCallback = callback }
+    override fun onInnerStart(callback: (() -> Unit)?) = me.apply { startCallback = callback }
+
+    override fun cancel() {
+
+    }
+
+    override fun reset() {
+        cancel()
+    }
+
+    override fun retainingDestroy() {
+        super.retainingDestroy()
+
+        cancel()
+    }
+
+    override fun destroy() {
+        super.destroy()
+
+        reset()
+    }
 }

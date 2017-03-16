@@ -11,9 +11,8 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentActivity
 import android.support.v4.app.FragmentManager
 import android.view.View
-import com.rubengees.ktask.base.BaseTask
 import com.rubengees.ktask.base.BranchTask
-import com.rubengees.ktask.base.MultiBranchTask
+import com.rubengees.ktask.base.Task
 
 /**
  * Task for working in a safe manner with the Android Lifecycle.
@@ -29,15 +28,16 @@ import com.rubengees.ktask.base.MultiBranchTask
  *
  * @author Ruben Gees
  */
-class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
+class AndroidLifecycleTask<I, O, T : Task<I, O, T>> :
+        BranchTask<I, O, I, O, T, AndroidLifecycleTask<I, O, T>> {
 
     override val isWorking: Boolean
         get() = innerTask.isWorking
 
-    val innerTask: BaseTask<I, O>
+    override val innerTask: T
         get() = workerFragment.innerTask
 
-    private val workerFragment: RetainedWorkerFragment<I, O>
+    private val workerFragment: RetainedWorkerFragment<I, O, T>
     private var context: Activity?
 
     private val handler = Handler(Looper.getMainLooper())
@@ -64,16 +64,16 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
      * @param tag The tag of this task. This has to be unique.
      */
     @SuppressLint("CommitTransaction")
-    constructor(context: FragmentActivity, innerTask: BaseTask<I, O>, tag: String) {
+    constructor(context: FragmentActivity, innerTask: T, tag: String) {
         this.context = context
 
         val existingWorker = context.supportFragmentManager.findFragmentByTag(tag)
 
         @Suppress("UNCHECKED_CAST")
-        if (existingWorker is RetainedWorkerFragment<*, *>) {
-            workerFragment = existingWorker as RetainedWorkerFragment<I, O>
+        if (existingWorker is RetainedWorkerFragment<*, *, *>) {
+            workerFragment = existingWorker as RetainedWorkerFragment<I, O, T>
 
-            copyCallbacks(innerTask, workerFragment.innerTask)
+            this.innerTask.restoreCallbacks(innerTask)
         } else {
             workerFragment = RetainedWorkerFragment(innerTask).apply {
                 context.supportFragmentManager.beginTransaction().add(this, tag).commitNow()
@@ -103,8 +103,8 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
 
         context.application.registerActivityLifecycleCallbacks(lifecycleCallbacks)
 
-        workerFragment.innerTask.onSuccess { finishSuccessful(it) }
-        workerFragment.innerTask.onError { finishWithError(it) }
+        this.innerTask.onSuccess { finishSuccessful(it) }
+        this.innerTask.onError { finishWithError(it) }
     }
 
     /**
@@ -112,16 +112,16 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
      *
      * @param tag The tag of this task. This has to be unique.
      */
-    constructor(context: Fragment, innerTask: BaseTask<I, O>, tag: String) {
+    constructor(context: Fragment, innerTask: T, tag: String) {
         this.context = context.activity
 
         val existingWorker = context.childFragmentManager.findFragmentByTag(tag)
 
         @Suppress("UNCHECKED_CAST")
-        if (existingWorker is RetainedWorkerFragment<*, *>) {
-            workerFragment = existingWorker as RetainedWorkerFragment<I, O>
+        if (existingWorker is RetainedWorkerFragment<*, *, *>) {
+            workerFragment = existingWorker as RetainedWorkerFragment<I, O, T>
 
-            copyCallbacks(innerTask, workerFragment.innerTask)
+            this.innerTask.restoreCallbacks(innerTask)
         } else {
             workerFragment = RetainedWorkerFragment(innerTask).apply {
                 context.childFragmentManager.beginTransaction().add(this, tag).commitNow()
@@ -144,8 +144,8 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
 
         context.activity.supportFragmentManager.registerFragmentLifecycleCallbacks(lifecycleCallbacks, true)
 
-        workerFragment.innerTask.onSuccess { finishSuccessful(it) }
-        workerFragment.innerTask.onError { finishWithError(it) }
+        this.innerTask.onSuccess { finishSuccessful(it) }
+        this.innerTask.onError { finishWithError(it) }
     }
 
     /**
@@ -153,10 +153,7 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
      *
      * @param tag The tag of this task. This has to be unique.
      */
-    constructor(context: View, innerTask: BaseTask<I, O>, tag: String) :
-            this(findActivityForView(context), innerTask, tag)
-
-    override fun onInnerStart(callback: (() -> Unit)?) = this.apply { innerTask.onInnerStart(callback) }
+    constructor(context: View, innerTask: T, tag: String) : this(findActivityForView(context), innerTask, tag)
 
     override fun start(action: () -> Unit) {
         if (!isWorking) {
@@ -187,28 +184,13 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
             startCallback?.invoke()
         }
 
-        innerTask.execute(input)
+        this.innerTask.execute(input)
     }
 
-    override fun cancel() {
-        innerTask.cancel()
-    }
+    override fun retainingDestroy() {
+        super.retainingDestroy()
 
-    override fun reset() {
-        innerTask.reset()
-    }
-
-    override fun destroy() {
-        innerTask.destroy()
         context = null
-
-        super.destroy()
-    }
-
-    fun retainingDestroy() {
-        context = null
-
-        super.destroy()
     }
 
     private fun safelyDeliver(action: () -> Unit) {
@@ -219,34 +201,7 @@ class AndroidLifecycleTask<I, O> : BaseTask<I, O> {
         }
     }
 
-    private fun copyCallbacks(newTask: BaseTask<*, *>, existingTask: BaseTask<*, *>) {
-        if (newTask::class.java != existingTask::class.java) {
-            throw IllegalArgumentException("The passed task must have the same type as the existing task")
-        }
-
-        newTask.copyCallbacksFrom(existingTask)
-
-        if (newTask is BranchTask<*, *, *, *> && newTask.innerTask is BaseTask<*, *>) {
-            if (existingTask !is BranchTask<*, *, *, *> || existingTask.innerTask !is BaseTask<*, *>) {
-                throw IllegalArgumentException("The passed task must have the same type as the existing task")
-            }
-
-            copyCallbacks(newTask.innerTask as BaseTask<*, *>, existingTask.innerTask as BaseTask<*, *>)
-        }
-
-        if (newTask is MultiBranchTask<*, *, *, *, *, *> && newTask.leftInnerTask is BaseTask<*, *> &&
-                newTask.rightInnerTask is BaseTask<*, *>) {
-            if (existingTask !is MultiBranchTask<*, *, *, *, *, *> || existingTask.leftInnerTask !is BaseTask<*, *> ||
-                    existingTask.rightInnerTask !is BaseTask<*, *>) {
-                throw IllegalArgumentException("The passed task must have the same type as the existing task")
-            }
-
-            copyCallbacks(newTask.leftInnerTask as BaseTask<*, *>, existingTask.leftInnerTask as BaseTask<*, *>)
-            copyCallbacks(newTask.rightInnerTask as BaseTask<*, *>, existingTask.rightInnerTask as BaseTask<*, *>)
-        }
-    }
-
-    internal class RetainedWorkerFragment<I, O>(var innerTask: BaseTask<I, O>) : Fragment() {
+    internal class RetainedWorkerFragment<I, O, T : Task<I, O, T>>(var innerTask: T) : Fragment() {
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
 

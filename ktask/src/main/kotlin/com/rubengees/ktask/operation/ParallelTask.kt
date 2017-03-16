@@ -25,11 +25,15 @@ import com.rubengees.ktask.util.PartialTaskException
  *
  * @author Ruben Gees
  */
-class ParallelTask<LI, RI, LM, RM, O>(leftInnerTask: Task<LI, LM>, rightInnerTask: Task<RI, RM>,
-                                      private val zipFunction: (LM, RM) -> O,
-                                      private val awaitLeftResultOnError: Boolean = false,
-                                      private val awaitRightResultOnError: Boolean = false) :
-        MultiBranchTask<Pair<LI, RI>, O, LI, RI, LM, RM>(leftInnerTask, rightInnerTask) {
+class ParallelTask<LI, RI, LM, RM, O, LT : Task<LI, LM, LT>,
+        RT : Task<RI, RM, RT>>(override val leftInnerTask: LT,
+                               override val rightInnerTask: RT,
+                               zipFunction: (LM, RM) -> O,
+                               private val awaitLeftResultOnError: Boolean = false,
+                               private val awaitRightResultOnError: Boolean = false) :
+        MultiBranchTask<Pair<LI, RI>, O, LI, RI, LM, RM, LT, RT, ParallelTask<LI, RI, LM, RM, O, LT, RT>>() {
+
+    private var zipFunction: ((LM, RM) -> O)? = zipFunction
 
     private var leftResult: LM? = null
     private var rightResult: RM? = null
@@ -38,6 +42,30 @@ class ParallelTask<LI, RI, LM, RM, O>(leftInnerTask: Task<LI, LM>, rightInnerTas
     private var rightError: Throwable? = null
 
     init {
+        restoreCallbacks(this)
+    }
+
+    override fun execute(input: Pair<LI, RI>) {
+        start {
+            leftInnerTask.execute(input.first)
+            rightInnerTask.execute(input.second)
+        }
+    }
+
+    override fun cancel() {
+        super.cancel()
+
+        leftResult = null
+        rightResult = null
+        leftError = null
+        rightError = null
+    }
+
+    override fun restoreCallbacks(from: ParallelTask<LI, RI, LM, RM, O, LT, RT>) {
+        super.restoreCallbacks(from)
+
+        zipFunction = from.zipFunction
+
         leftInnerTask.onSuccess {
             val safeRightResult = rightResult
             val safeRightError = rightError
@@ -45,10 +73,12 @@ class ParallelTask<LI, RI, LM, RM, O>(leftInnerTask: Task<LI, LM>, rightInnerTas
             if (safeRightResult != null) {
                 cancel()
 
-                try {
-                    finishSuccessful(zipFunction.invoke(it, safeRightResult))
-                } catch(error: Exception) {
-                    finishWithError(PartialTaskException(error, safeRightResult))
+                this.zipFunction?.let { function ->
+                    try {
+                        finishSuccessful(function.invoke(it, safeRightResult))
+                    } catch(error: Exception) {
+                        finishWithError(PartialTaskException(error, safeRightResult))
+                    }
                 }
             } else if (safeRightError != null) {
                 cancel()
@@ -89,10 +119,12 @@ class ParallelTask<LI, RI, LM, RM, O>(leftInnerTask: Task<LI, LM>, rightInnerTas
             if (safeLeftResult != null) {
                 cancel()
 
-                try {
-                    finishSuccessful(zipFunction.invoke(safeLeftResult, it))
-                } catch(error: Exception) {
-                    finishWithError(PartialTaskException(error, safeLeftResult))
+                this.zipFunction?.let { function ->
+                    try {
+                        finishSuccessful(function.invoke(safeLeftResult, it))
+                    } catch(error: Exception) {
+                        finishWithError(PartialTaskException(error, safeLeftResult))
+                    }
                 }
             } else if (safeLeftError != null) {
                 cancel()
@@ -125,39 +157,5 @@ class ParallelTask<LI, RI, LM, RM, O>(leftInnerTask: Task<LI, LM>, rightInnerTas
                 }
             }
         }
-    }
-
-    override fun execute(input: Pair<LI, RI>) {
-        start {
-            leftInnerTask.execute(input.first)
-            rightInnerTask.execute(input.second)
-        }
-    }
-
-    override fun cancel() {
-        super.cancel()
-
-        leftResult = null
-        rightResult = null
-        leftError = null
-        rightError = null
-    }
-
-    override fun reset() {
-        super.reset()
-
-        leftResult = null
-        rightResult = null
-        leftError = null
-        rightError = null
-    }
-
-    override fun destroy() {
-        super.destroy()
-
-        leftResult = null
-        rightResult = null
-        leftError = null
-        rightError = null
     }
 }

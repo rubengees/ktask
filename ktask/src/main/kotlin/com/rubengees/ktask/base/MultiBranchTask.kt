@@ -20,17 +20,16 @@ package com.rubengees.ktask.base
  *
  * @author Ruben Gees
  */
-abstract class MultiBranchTask<I, O, LI, RI, LO, RO>(val leftInnerTask: Task<LI, LO>,
-                                                     val rightInnerTask: Task<RI, RO>) : BaseTask<I, O>() {
+abstract class MultiBranchTask<I, O, LI, RI, LO, RO, LT : Task<LI, LO, LT>, RT : Task<RI, RO, RT>,
+        SELF : MultiBranchTask<I, O, LI, RI, LO, RO, LT, RT, SELF>> : BaseTask<I, O, SELF>() {
+
+    abstract val leftInnerTask: LT
+    abstract val rightInnerTask: RT
 
     override val isWorking: Boolean
         get() = leftInnerTask.isWorking || rightInnerTask.isWorking
 
-    override fun onStart(callback: (() -> Unit)?) = this.apply { super.onStart(callback) }
-    override fun onSuccess(callback: ((O) -> Unit)?) = this.apply { super.onSuccess(callback) }
-    override fun onError(callback: ((Throwable) -> Unit)?) = this.apply { super.onError(callback) }
-    override fun onFinish(callback: (() -> Unit)?) = this.apply { super.onFinish(callback) }
-    override fun onInnerStart(callback: (() -> Unit)?) = this.apply { leftInnerTask.onInnerStart(callback) }
+    override fun onInnerStart(callback: (() -> Unit)?) = me.apply { leftInnerTask.onInnerStart(callback) }
 
     override fun cancel() {
         leftInnerTask.cancel()
@@ -42,10 +41,24 @@ abstract class MultiBranchTask<I, O, LI, RI, LO, RO>(val leftInnerTask: Task<LI,
         rightInnerTask.reset()
     }
 
+    override fun retainingDestroy() {
+        super.retainingDestroy()
+
+        leftInnerTask.retainingDestroy()
+        rightInnerTask.retainingDestroy()
+    }
+
     override fun destroy() {
+        super.destroy()
+
         leftInnerTask.destroy()
         rightInnerTask.destroy()
+    }
 
-        super.destroy()
+    override fun restoreCallbacks(from: SELF) {
+        super.restoreCallbacks(from)
+
+        leftInnerTask.restoreCallbacks(from.leftInnerTask)
+        rightInnerTask.restoreCallbacks(from.rightInnerTask)
     }
 }

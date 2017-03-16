@@ -1,6 +1,5 @@
 package com.rubengees.ktask.util
 
-import com.rubengees.ktask.base.BaseTask
 import com.rubengees.ktask.base.Task
 import com.rubengees.ktask.operation.*
 
@@ -9,57 +8,38 @@ import com.rubengees.ktask.operation.*
  *
  * @author Ruben Gees
  */
-class TaskBuilder<I, O> private constructor(private var currentTask: BaseTask<I, O>) {
+class TaskBuilder<I, O, T : Task<I, O, T>> private constructor(private var currentTask: T) {
 
     companion object {
-        fun <I, O> task(task: BaseTask<I, O>): TaskBuilder<I, O> {
-            return TaskBuilder(task)
-        }
+        fun <I, O, T : Task<I, O, T>> task(task: T) = TaskBuilder(task)
     }
 
-    fun cache(strategy: CacheTask.CacheStrategy = CacheTask.CacheStrategy.FULL): TaskBuilder<I, O> {
-        return this.apply { currentTask = CacheTask(currentTask, strategy) }
-    }
+    fun cache(strategy: CacheTask.CacheStrategy = CacheTask.CacheStrategy.FULL) = task(CacheTask(currentTask, strategy))
 
-    fun inputEcho(): TaskBuilder<I, Pair<I, O>> {
-        return TaskBuilder(InputEchoTask(currentTask))
-    }
+    fun inputEcho() = task(InputEchoTask(currentTask))
 
-    fun <M> map(function: (O) -> M): TaskBuilder<I, M> {
-        return TaskBuilder<I, M>(MapTask<I, O, M>(currentTask, function))
-    }
+    fun <M> map(function: (O) -> M) = task(MapTask(currentTask, function))
 
-    fun <RI, RO, NO> parallelWith(other: Task<RI, RO>,
-                                  zipFunction: (O, RO) -> NO): TaskBuilder<Pair<I, RI>, NO> {
-        return TaskBuilder(ParallelTask(currentTask, other, zipFunction))
-    }
+    fun <OI, OO, FO, OT : Task<OI, OO, OT>> parallelWith(other: OT, zipFunction: (O, OO) -> FO) =
+            task(ParallelTask(currentTask, other, zipFunction))
 
-    fun <RI, RO, NO> parallelWith(other: TaskBuilder<RI, RO>,
-                                  zipFunction: (O, RO) -> NO,
-                                  awaitLeftResultOnError: Boolean = false,
-                                  awaitRightResultOnError: Boolean = false): TaskBuilder<Pair<I, RI>, NO> {
+    fun <OI, OO, FO, OT : Task<OI, OO, OT>> parallelWith(other: TaskBuilder<OI, OO, OT>, zipFunction: (O, OO) -> FO,
+                                                         awaitLeftResultOnError: Boolean = false,
+                                                         awaitRightResultOnError: Boolean = false) =
+            task(ParallelTask(currentTask, other.build(), zipFunction,
+                    awaitLeftResultOnError, awaitRightResultOnError))
 
-        return TaskBuilder(ParallelTask(currentTask, other.build(), zipFunction, awaitLeftResultOnError,
-                awaitRightResultOnError))
-    }
-
-    fun <RI, RO> then(other: Task<RI, RO>, mapFunction: (O) -> RI = {
+    fun <OI, OO, OT : Task<OI, OO, OT>> then(other: OT, mapFunction: (O) -> OI = {
         @Suppress("UNCHECKED_CAST")
-        it as RI
-    }): TaskBuilder<I, RO> {
-        return TaskBuilder(StreamTask(currentTask, other, mapFunction))
-    }
+        it as OI
+    }) = task(StreamTask(currentTask, other, mapFunction))
 
-    fun <RI, RO> then(other: TaskBuilder<RI, RO>, mapFunction: (O) -> RI = {
+    fun <OI, OO, OT : Task<OI, OO, OT>> then(other: TaskBuilder<OI, OO, OT>, mapFunction: (O) -> OI = {
         @Suppress("UNCHECKED_CAST")
-        it as RI
-    }): TaskBuilder<I, RO> {
-        return TaskBuilder(StreamTask(currentTask, other.build(), mapFunction))
-    }
+        it as OI
+    }) = task(StreamTask(currentTask, other.build(), mapFunction))
 
-    fun validateBefore(function: (I) -> Unit): TaskBuilder<I, O> {
-        return this.apply { currentTask = ValidatingTask(currentTask, function) }
-    }
+    fun validateBefore(function: (I) -> Unit) = task(ValidatingTask(currentTask, function))
 
     fun onStart(callback: () -> Unit) = this.apply { currentTask.onStart(callback) }
     fun onSuccess(callback: (O) -> Unit) = this.apply { currentTask.onSuccess(callback) }
@@ -67,8 +47,7 @@ class TaskBuilder<I, O> private constructor(private var currentTask: BaseTask<I,
     fun onFinish(callback: () -> Unit) = this.apply { currentTask.onFinish(callback) }
     fun onInnerStart(callback: () -> Unit) = this.apply { currentTask.onInnerStart(callback) }
 
-    fun build(): BaseTask<I, O> {
+    fun build(): T {
         return currentTask
     }
-
 }

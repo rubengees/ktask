@@ -7,7 +7,6 @@ import com.squareup.leakcanary.RefWatcher
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
-
 /**
  * TODO: Describe class
  *

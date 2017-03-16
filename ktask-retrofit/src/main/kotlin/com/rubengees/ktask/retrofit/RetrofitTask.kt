@@ -11,7 +11,7 @@ import java.io.IOException
  *
  * @author Ruben Gees
  */
-class RetrofitTask<O> : LeafTask<Call<O>, O>() {
+class RetrofitTask<O> : LeafTask<Call<O>, O, RetrofitTask<O>>() {
 
     override val isWorking: Boolean
         get() = call != null
@@ -43,17 +43,9 @@ class RetrofitTask<O> : LeafTask<Call<O>, O>() {
     }
 
     override fun cancel() {
+        super.cancel()
+
         call?.cancel()
         call = null
-    }
-
-    override fun reset() {
-        cancel()
-    }
-
-    override fun destroy() {
-        super.destroy()
-
-        reset()
     }
 }

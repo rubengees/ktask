@@ -4,7 +4,7 @@ import com.rubengees.ktask.base.BranchTask
 import com.rubengees.ktask.base.Task
 
 /**
- * Task for mapping the result of the [innerTask] to another type or value, specified by the [function].
+ * Task for mapping the result of the [innerTask] to another type or value, specified by the [mapFunction].
  *
  * @param I The type of input.
  * @param O The type of output.
@@ -12,26 +12,38 @@ import com.rubengees.ktask.base.Task
  *
  * @author Ruben Gees
  */
-class MapTask<I, M, O>(innerTask: Task<I, M>, private val function: (M) -> O) :
-        BranchTask<I, O, I, M>(innerTask) {
+class MapTask<I, M, O, T : Task<I, M, T>>(override val innerTask: T, mapFunction: (M) -> O) :
+        BranchTask<I, O, I, M, T, MapTask<I, M, O, T>>() {
+
+    var mapFunction: ((M) -> O)? = mapFunction
 
     init {
-        innerTask.onSuccess {
-            try {
-                finishSuccessful(function.invoke(it))
-            } catch(error: Throwable) {
-                finishWithError(error)
-            }
-        }
-
-        innerTask.onError {
-            finishWithError(it)
-        }
+        restoreCallbacks(this)
     }
 
     override fun execute(input: I) {
         start {
             innerTask.execute(input)
+        }
+    }
+
+    override fun restoreCallbacks(from: MapTask<I, M, O, T>) {
+        super.restoreCallbacks(from)
+
+        mapFunction = from.mapFunction
+
+        innerTask.onSuccess {
+            this.mapFunction?.let { function ->
+                try {
+                    finishSuccessful(function.invoke(it))
+                } catch(error: Throwable) {
+                    finishWithError(error)
+                }
+            }
+        }
+
+        innerTask.onError {
+            finishWithError(it)
         }
     }
 }
