@@ -12,8 +12,7 @@ import com.rubengees.ktask.base.Task
  *
  * @author Ruben Gees
  */
-class MapTask<I, M, O, T : Task<I, M, T>>(override val innerTask: T, mapFunction: (M) -> O) :
-        BranchTask<I, O, I, M, T, MapTask<I, M, O, T>>() {
+class MapTask<I, M, O>(override val innerTask: Task<I, M>, mapFunction: (M) -> O) : BranchTask<I, O, I, M>() {
 
     var mapFunction: ((M) -> O)? = mapFunction
 
@@ -27,10 +26,15 @@ class MapTask<I, M, O, T : Task<I, M, T>>(override val innerTask: T, mapFunction
         }
     }
 
-    override fun restoreCallbacks(from: MapTask<I, M, O, T>) {
+    @Suppress("UNCHECKED_CAST")
+    override fun restoreCallbacks(from: Task<I, O>) {
         super.restoreCallbacks(from)
 
-        mapFunction = from.mapFunction
+        if (from !is MapTask<*, *, *>) {
+            throw IllegalArgumentException("The passed task must have the same type.")
+        }
+
+        mapFunction = from.mapFunction as ((M) -> O)?
 
         innerTask.onSuccess {
             this.mapFunction?.let { function ->

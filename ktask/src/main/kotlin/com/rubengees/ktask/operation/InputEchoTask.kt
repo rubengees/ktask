@@ -15,8 +15,7 @@ import com.rubengees.ktask.base.Task
  *
  * @author Ruben Gees
  */
-class InputEchoTask<I, O, T : Task<I, O, T>>(override val innerTask: T) :
-        BranchTask<I, Pair<I, O>, I, O, T, InputEchoTask<I, O, T>>() {
+class InputEchoTask<I, O>(override val innerTask: Task<I, O>) : BranchTask<I, Pair<I, O>, I, O>() {
 
     private var currentInput: I? = null
 
@@ -50,7 +49,7 @@ class InputEchoTask<I, O, T : Task<I, O, T>>(override val innerTask: T) :
         currentInput = null
     }
 
-    override fun restoreCallbacks(from: InputEchoTask<I, O, T>) {
+    override fun restoreCallbacks(from: Task<I, Pair<I, O>>) {
         super.restoreCallbacks(from)
 
         innerTask.onSuccess {

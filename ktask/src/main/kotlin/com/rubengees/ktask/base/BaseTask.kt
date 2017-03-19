@@ -13,7 +13,7 @@ package com.rubengees.ktask.base
  *
  * @author Ruben Gees
  */
-abstract class BaseTask<I, O, SELF : BaseTask<I, O, SELF>> : Task<I, O, SELF>() {
+abstract class BaseTask<I, O> : Task<I, O>() {
 
     /**
      * The callback to be invoked when execution of the task starts.
@@ -35,10 +35,10 @@ abstract class BaseTask<I, O, SELF : BaseTask<I, O, SELF>> : Task<I, O, SELF>() 
      */
     protected var successCallback: ((O) -> Unit)? = null
 
-    override fun onStart(callback: (() -> Unit)?) = me.apply { startCallback = callback }
-    override fun onSuccess(callback: ((O) -> Unit)?) = me.apply { successCallback = callback }
-    override fun onError(callback: ((Throwable) -> Unit)?) = me.apply { errorCallback = callback }
-    override fun onFinish(callback: (() -> Unit)?) = me.apply { finishCallback = callback }
+    override fun onStart(callback: (() -> Unit)?) = this.apply { startCallback = callback }
+    override fun onSuccess(callback: ((O) -> Unit)?) = this.apply { successCallback = callback }
+    override fun onError(callback: ((Throwable) -> Unit)?) = this.apply { errorCallback = callback }
+    override fun onFinish(callback: (() -> Unit)?) = this.apply { finishCallback = callback }
 
     override fun forceExecute(input: I) {
         cancel()
@@ -100,7 +100,11 @@ abstract class BaseTask<I, O, SELF : BaseTask<I, O, SELF>> : Task<I, O, SELF>() 
         finishCallback?.invoke()
     }
 
-    override fun restoreCallbacks(from: SELF) {
+    override fun restoreCallbacks(from: Task<I, O>) {
+        if (from !is BaseTask) {
+            throw IllegalArgumentException("The passed task must have the same type.")
+        }
+
         startCallback = from.startCallback
         finishCallback = from.finishCallback
     }

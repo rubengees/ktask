@@ -17,13 +17,12 @@ import com.rubengees.ktask.base.Task
  *
  * @author Ruben Gees
  */
-class StreamTask<LI, LO, RI, RO, LT : Task<LI, LO, LT>, RT : Task<RI, RO, RT>>(override val leftInnerTask: LT,
-                                                                               override val rightInnerTask: RT,
-                                                                               mapFunction: (LO) -> RI = {
-                                                                                   @Suppress("UNCHECKED_CAST")
-                                                                                   it as RI
-                                                                               }) :
-        MultiBranchTask<LI, RO, LI, RI, LO, RO, LT, RT, StreamTask<LI, LO, RI, RO, LT, RT>>() {
+class StreamTask<LI, LO, RI, RO>(override val leftInnerTask: Task<LI, LO>,
+                                 override val rightInnerTask: Task<RI, RO>,
+                                 mapFunction: (LO) -> RI = {
+                                     @Suppress("UNCHECKED_CAST")
+                                     it as RI
+                                 }) : MultiBranchTask<LI, RO, LI, RI, LO, RO>() {
 
     private var mapFunction: ((LO) -> RI)? = mapFunction
 
@@ -43,10 +42,16 @@ class StreamTask<LI, LO, RI, RO, LT : Task<LI, LO, LT>, RT : Task<RI, RO, RT>>(o
         mapFunction = null
     }
 
-    override fun restoreCallbacks(from: StreamTask<LI, LO, RI, RO, LT, RT>) {
+    @Suppress("UNCHECKED_CAST")
+    override fun restoreCallbacks(from: Task<LI, RO>) {
+        super.restoreCallbacks(from)
         super.restoreCallbacks(from)
 
-        mapFunction = from.mapFunction
+        if (from !is StreamTask<*, *, *, *>) {
+            throw IllegalArgumentException("The passed task must have the same type.")
+        }
+
+        mapFunction = from.mapFunction as ((LO) -> RI)?
 
         leftInnerTask.onSuccess {
             this.mapFunction?.let { function ->

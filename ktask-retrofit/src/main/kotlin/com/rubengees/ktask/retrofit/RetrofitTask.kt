@@ -11,7 +11,7 @@ import java.io.IOException
  *
  * @author Ruben Gees
  */
-class RetrofitTask<O> : LeafTask<Call<O>, O, RetrofitTask<O>>() {
+class RetrofitTask<O> : LeafTask<Call<O>, O>() {
 
     override val isWorking: Boolean
         get() = call != null

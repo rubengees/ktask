@@ -13,8 +13,8 @@ import com.rubengees.ktask.base.Task
  *
  * @author Ruben Gees
  */
-class ValidatingTask<I, O, T : Task<I, O, T>>(override val innerTask: T, validationFunction: (I) -> Unit) :
-        BranchTask<I, O, I, O, T, ValidatingTask<I, O, T>>() {
+class ValidatingTask<I, O>(override val innerTask: Task<I, O>, validationFunction: (I) -> Unit) :
+        BranchTask<I, O, I, O>() {
 
     var validationFunction: ((I) -> Unit)? = validationFunction
 
@@ -42,10 +42,15 @@ class ValidatingTask<I, O, T : Task<I, O, T>>(override val innerTask: T, validat
         validationFunction = null
     }
 
-    override fun restoreCallbacks(from: ValidatingTask<I, O, T>) {
+    @Suppress("UNCHECKED_CAST")
+    override fun restoreCallbacks(from: Task<I, O>) {
         super.restoreCallbacks(from)
 
-        validationFunction = from.validationFunction
+        if (from !is ValidatingTask<*, *>) {
+            throw IllegalArgumentException("The passed task must have the same type.")
+        }
+
+        validationFunction = from.validationFunction as ((I) -> Unit)?
 
         innerTask.onSuccess {
             finishSuccessful(it)

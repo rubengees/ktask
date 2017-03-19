@@ -28,16 +28,15 @@ import com.rubengees.ktask.base.Task
  *
  * @author Ruben Gees
  */
-class AndroidLifecycleTask<I, O, T : Task<I, O, T>> :
-        BranchTask<I, O, I, O, T, AndroidLifecycleTask<I, O, T>> {
+class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
 
     override val isWorking: Boolean
         get() = innerTask.isWorking
 
-    override val innerTask: T
+    override val innerTask: Task<I, O>
         get() = workerFragment.innerTask
 
-    private val workerFragment: RetainedWorkerFragment<I, O, T>
+    private val workerFragment: RetainedWorkerFragment<I, O>
     private var context: Activity?
 
     private val handler = Handler(Looper.getMainLooper())
@@ -64,14 +63,14 @@ class AndroidLifecycleTask<I, O, T : Task<I, O, T>> :
      * @param tag The tag of this task. This has to be unique.
      */
     @SuppressLint("CommitTransaction")
-    constructor(context: FragmentActivity, innerTask: T, tag: String) {
+    constructor(context: FragmentActivity, innerTask: Task<I, O>, tag: String) {
         this.context = context
 
         val existingWorker = context.supportFragmentManager.findFragmentByTag(tag)
 
         @Suppress("UNCHECKED_CAST")
-        if (existingWorker is RetainedWorkerFragment<*, *, *>) {
-            workerFragment = existingWorker as RetainedWorkerFragment<I, O, T>
+        if (existingWorker is RetainedWorkerFragment<*, *>) {
+            workerFragment = existingWorker as RetainedWorkerFragment<I, O>
 
             this.innerTask.restoreCallbacks(innerTask)
         } else {
@@ -112,14 +111,14 @@ class AndroidLifecycleTask<I, O, T : Task<I, O, T>> :
      *
      * @param tag The tag of this task. This has to be unique.
      */
-    constructor(context: Fragment, innerTask: T, tag: String) {
+    constructor(context: Fragment, innerTask: Task<I, O>, tag: String) {
         this.context = context.activity
 
         val existingWorker = context.childFragmentManager.findFragmentByTag(tag)
 
         @Suppress("UNCHECKED_CAST")
-        if (existingWorker is RetainedWorkerFragment<*, *, *>) {
-            workerFragment = existingWorker as RetainedWorkerFragment<I, O, T>
+        if (existingWorker is RetainedWorkerFragment<*, *>) {
+            workerFragment = existingWorker as RetainedWorkerFragment<I, O>
 
             this.innerTask.restoreCallbacks(innerTask)
         } else {
@@ -153,7 +152,7 @@ class AndroidLifecycleTask<I, O, T : Task<I, O, T>> :
      *
      * @param tag The tag of this task. This has to be unique.
      */
-    constructor(context: View, innerTask: T, tag: String) : this(findActivityForView(context), innerTask, tag)
+    constructor(context: View, innerTask: Task<I, O>, tag: String) : this(findActivityForView(context), innerTask, tag)
 
     override fun start(action: () -> Unit) {
         if (!isWorking) {
@@ -201,7 +200,7 @@ class AndroidLifecycleTask<I, O, T : Task<I, O, T>> :
         }
     }
 
-    internal class RetainedWorkerFragment<I, O, T : Task<I, O, T>>(var innerTask: T) : Fragment() {
+    internal class RetainedWorkerFragment<I, O>(var innerTask: Task<I, O>) : Fragment() {
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
 

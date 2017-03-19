@@ -8,10 +8,10 @@ import com.rubengees.ktask.operation.*
  *
  * @author Ruben Gees
  */
-class TaskBuilder<I, O, T : Task<I, O, T>> private constructor(private var currentTask: T) {
+class TaskBuilder<I, O, T : Task<I, O>> private constructor(private var currentTask: T) {
 
     companion object {
-        fun <I, O, T : Task<I, O, T>> task(task: T) = TaskBuilder(task)
+        fun <I, O, T : Task<I, O>> task(task: T) = TaskBuilder(task)
     }
 
     fun cache(strategy: CacheTask.CacheStrategy = CacheTask.CacheStrategy.FULL) = task(CacheTask(currentTask, strategy))
@@ -20,21 +20,22 @@ class TaskBuilder<I, O, T : Task<I, O, T>> private constructor(private var curre
 
     fun <M> map(function: (O) -> M) = task(MapTask(currentTask, function))
 
-    fun <OI, OO, FO, OT : Task<OI, OO, OT>> parallelWith(other: OT, zipFunction: (O, OO) -> FO) =
+    fun <OI, OO, FO> parallelWith(other: Task<OI, OO>, zipFunction: (O, OO) -> FO) =
             task(ParallelTask(currentTask, other, zipFunction))
 
-    fun <OI, OO, FO, OT : Task<OI, OO, OT>> parallelWith(other: TaskBuilder<OI, OO, OT>, zipFunction: (O, OO) -> FO,
-                                                         awaitLeftResultOnError: Boolean = false,
-                                                         awaitRightResultOnError: Boolean = false) =
-            task(ParallelTask(currentTask, other.build(), zipFunction,
-                    awaitLeftResultOnError, awaitRightResultOnError))
+    fun <OI, OO, FO> parallelWith(other: TaskBuilder<OI, OO, Task<OI, OO>>,
+                                  zipFunction: (O, OO) -> FO,
+                                  awaitLeftResultOnError: Boolean = false,
+                                  awaitRightResultOnError: Boolean = false)
+            = task(ParallelTask(currentTask, other.build(), zipFunction, awaitLeftResultOnError,
+            awaitRightResultOnError))
 
-    fun <OI, OO, OT : Task<OI, OO, OT>> then(other: OT, mapFunction: (O) -> OI = {
+    fun <OI, OO> then(other: Task<OI, OO>, mapFunction: (O) -> OI = {
         @Suppress("UNCHECKED_CAST")
         it as OI
     }) = task(StreamTask(currentTask, other, mapFunction))
 
-    fun <OI, OO, OT : Task<OI, OO, OT>> then(other: TaskBuilder<OI, OO, OT>, mapFunction: (O) -> OI = {
+    fun <OI, OO> then(other: TaskBuilder<OI, OO, Task<OI, OO>>, mapFunction: (O) -> OI = {
         @Suppress("UNCHECKED_CAST")
         it as OI
     }) = task(StreamTask(currentTask, other.build(), mapFunction))

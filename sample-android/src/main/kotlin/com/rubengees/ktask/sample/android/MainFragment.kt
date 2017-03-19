@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
+import butterknife.bindView
 import com.rubengees.ktask.android.bindToLifecycle
 import com.rubengees.ktask.retrofit.retrofitTask
 import com.rubengees.ktask.sample.RepositoryInfo

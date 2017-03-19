@@ -15,15 +15,14 @@ package com.rubengees.ktask.base
  *
  * @author Ruben Gees
  */
-abstract class BranchTask<I, O, TI, TO, T : Task<TI, TO, T>,
-        SELF : BranchTask<I, O, TI, TO, T, SELF>> : BaseTask<I, O, SELF>() {
+abstract class BranchTask<I, O, TI, TO> : BaseTask<I, O>() {
 
-    abstract val innerTask: T
+    abstract val innerTask: Task<TI, TO>
 
     override val isWorking: Boolean
         get() = innerTask.isWorking
 
-    override fun onInnerStart(callback: (() -> Unit)?) = me.apply { innerTask.onInnerStart(callback) }
+    override fun onInnerStart(callback: (() -> Unit)?) = this.apply { innerTask.onInnerStart(callback) }
 
     override fun cancel() {
         innerTask.cancel()
@@ -45,9 +44,14 @@ abstract class BranchTask<I, O, TI, TO, T : Task<TI, TO, T>,
         innerTask.destroy()
     }
 
-    override fun restoreCallbacks(from: SELF) {
+    @Suppress("UNCHECKED_CAST")
+    override fun restoreCallbacks(from: Task<I, O>) {
         super.restoreCallbacks(from)
 
-        innerTask.restoreCallbacks(from.innerTask)
+        if (from !is BranchTask<*, *, *, *>) {
+            throw IllegalArgumentException("The passed task must have the same type.")
+        }
+
+        innerTask.restoreCallbacks(from.innerTask as Task<TI, TO>)
     }
 }

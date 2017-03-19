@@ -14,11 +14,7 @@ package com.rubengees.ktask.base
  *
  * @author Ruben Gees
  */
-abstract class Task<I, O, SELF : Task<I, O, SELF>> {
-
-    @Suppress("UNCHECKED_CAST")
-    protected val me: SELF
-        get() = this as SELF
+abstract class Task<I, O> {
 
     /**
      * Property which returns true, if the current task is working.
@@ -99,21 +95,21 @@ abstract class Task<I, O, SELF : Task<I, O, SELF>> {
      *
      * @return This task.
      */
-    abstract fun onStart(callback: (() -> Unit)?): SELF
+    abstract fun onStart(callback: (() -> Unit)?): Task<I, O>
 
     /**
      * Assigns the [callback] to be called when the task executed successfully.
      *
      * @return This task.
      */
-    abstract fun onSuccess(callback: ((O) -> Unit)?): SELF
+    abstract fun onSuccess(callback: ((O) -> Unit)?): Task<I, O>
 
     /**
      * Assigns the [callback] to be called when the task failed with an error.
      *
      * @return This task.
      */
-    abstract fun onError(callback: ((Throwable) -> Unit)?): SELF
+    abstract fun onError(callback: ((Throwable) -> Unit)?): Task<I, O>
 
     /**
      * Assigns the [callback] to be called when the task finished. This means, that it either executed successfully or
@@ -123,7 +119,7 @@ abstract class Task<I, O, SELF : Task<I, O, SELF>> {
      *
      * @return This task.
      */
-    abstract fun onFinish(callback: (() -> Unit)?): SELF
+    abstract fun onFinish(callback: (() -> Unit)?): Task<I, O>
 
     /**
      * Assigns the [callback] to be called when the first [LeafTask] is started. This is the leftmost leaf in the tree
@@ -131,13 +127,14 @@ abstract class Task<I, O, SELF : Task<I, O, SELF>> {
      *
      * @return This task.
      */
-    abstract fun onInnerStart(callback: (() -> Unit)?): SELF
+    abstract fun onInnerStart(callback: (() -> Unit)?): Task<I, O>
 
     /**
      * Only for internal use.
      *
-     * Copies functions from the given [from] task to this one and re-applies the internal callbacks.
+     * Copies functions from the given [from] task to this one and re-applies the internal callbacks. The type of the
+     * passed has to be checked.
      * This is useful, when [retainingDestroy] has been called, and this task should be re-initialized.
      */
-    abstract fun restoreCallbacks(from: SELF)
+    abstract fun restoreCallbacks(from: Task<I, O>)
 }

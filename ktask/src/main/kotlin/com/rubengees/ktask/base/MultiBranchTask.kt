@@ -20,16 +20,15 @@ package com.rubengees.ktask.base
  *
  * @author Ruben Gees
  */
-abstract class MultiBranchTask<I, O, LI, RI, LO, RO, LT : Task<LI, LO, LT>, RT : Task<RI, RO, RT>,
-        SELF : MultiBranchTask<I, O, LI, RI, LO, RO, LT, RT, SELF>> : BaseTask<I, O, SELF>() {
+abstract class MultiBranchTask<I, O, LI, RI, LO, RO> : BaseTask<I, O>() {
 
-    abstract val leftInnerTask: LT
-    abstract val rightInnerTask: RT
+    abstract val leftInnerTask: Task<LI, LO>
+    abstract val rightInnerTask: Task<RI, RO>
 
     override val isWorking: Boolean
         get() = leftInnerTask.isWorking || rightInnerTask.isWorking
 
-    override fun onInnerStart(callback: (() -> Unit)?) = me.apply { leftInnerTask.onInnerStart(callback) }
+    override fun onInnerStart(callback: (() -> Unit)?) = this.apply { leftInnerTask.onInnerStart(callback) }
 
     override fun cancel() {
         leftInnerTask.cancel()
@@ -55,10 +54,15 @@ abstract class MultiBranchTask<I, O, LI, RI, LO, RO, LT : Task<LI, LO, LT>, RT :
         rightInnerTask.destroy()
     }
 
-    override fun restoreCallbacks(from: SELF) {
+    @Suppress("UNCHECKED_CAST")
+    override fun restoreCallbacks(from: Task<I, O>) {
         super.restoreCallbacks(from)
 
-        leftInnerTask.restoreCallbacks(from.leftInnerTask)
-        rightInnerTask.restoreCallbacks(from.rightInnerTask)
+        if (from !is MultiBranchTask<*, *, *, *, *, *>) {
+            throw IllegalArgumentException("The passed task must have the same type.")
+        }
+
+        leftInnerTask.restoreCallbacks(from.leftInnerTask as Task<LI, LO>)
+        rightInnerTask.restoreCallbacks(from.rightInnerTask as Task<RI, RO>)
     }
 }

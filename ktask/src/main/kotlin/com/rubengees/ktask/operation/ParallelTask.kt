@@ -25,13 +25,12 @@ import com.rubengees.ktask.util.PartialTaskException
  *
  * @author Ruben Gees
  */
-class ParallelTask<LI, RI, LM, RM, O, LT : Task<LI, LM, LT>,
-        RT : Task<RI, RM, RT>>(override val leftInnerTask: LT,
-                               override val rightInnerTask: RT,
-                               zipFunction: (LM, RM) -> O,
-                               private val awaitLeftResultOnError: Boolean = false,
-                               private val awaitRightResultOnError: Boolean = false) :
-        MultiBranchTask<Pair<LI, RI>, O, LI, RI, LM, RM, LT, RT, ParallelTask<LI, RI, LM, RM, O, LT, RT>>() {
+class ParallelTask<LI, RI, LM, RM, O>(override val leftInnerTask: Task<LI, LM>,
+                                      override val rightInnerTask: Task<RI, RM>,
+                                      zipFunction: (LM, RM) -> O,
+                                      private val awaitLeftResultOnError: Boolean = false,
+                                      private val awaitRightResultOnError: Boolean = false) :
+        MultiBranchTask<Pair<LI, RI>, O, LI, RI, LM, RM>() {
 
     private var zipFunction: ((LM, RM) -> O)? = zipFunction
 
@@ -61,10 +60,15 @@ class ParallelTask<LI, RI, LM, RM, O, LT : Task<LI, LM, LT>,
         rightError = null
     }
 
-    override fun restoreCallbacks(from: ParallelTask<LI, RI, LM, RM, O, LT, RT>) {
+    @Suppress("UNCHECKED_CAST")
+    override fun restoreCallbacks(from: Task<Pair<LI, RI>, O>) {
         super.restoreCallbacks(from)
 
-        zipFunction = from.zipFunction
+        if (from !is ParallelTask<*, *, *, *, *>) {
+            throw IllegalArgumentException("The passed task must have the same type.")
+        }
+
+        zipFunction = from.zipFunction as ((LM, RM) -> O)?
 
         leftInnerTask.onSuccess {
             val safeRightResult = rightResult
