@@ -37,18 +37,6 @@ class InputEchoTask<I, O>(override val innerTask: Task<I, O>) : BranchTask<I, Pa
         currentInput = null
     }
 
-    override fun reset() {
-        super.reset()
-
-        currentInput = null
-    }
-
-    override fun destroy() {
-        super.destroy()
-
-        currentInput = null
-    }
-
     override fun restoreCallbacks(from: Task<I, Pair<I, O>>) {
         super.restoreCallbacks(from)
 
