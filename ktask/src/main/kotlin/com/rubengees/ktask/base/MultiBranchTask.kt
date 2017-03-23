@@ -28,7 +28,7 @@ abstract class MultiBranchTask<I, O, LI, RI, LO, RO> : BaseTask<I, O>() {
     override val isWorking: Boolean
         get() = leftInnerTask.isWorking || rightInnerTask.isWorking
 
-    override fun onInnerStart(callback: (() -> Unit)?) = this.apply { leftInnerTask.onInnerStart(callback) }
+    override fun onInnerStart(callback: () -> Unit) = this.apply { leftInnerTask.onInnerStart(callback) }
 
     override fun cancel() {
         leftInnerTask.cancel()

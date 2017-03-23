@@ -157,7 +157,7 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
     override fun start(action: () -> Unit) {
         if (!isWorking) {
             safelyDeliver {
-                startCallback?.invoke()
+                startCallbacks.forEach { it.invoke() }
             }
 
             action.invoke()
@@ -166,21 +166,21 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
 
     override fun finishSuccessful(result: O) {
         safelyDeliver {
-            successCallback?.invoke(result)
-            finishCallback?.invoke()
+            successCallbacks.forEach { it.invoke(result) }
+            finishCallbacks.forEach { it.invoke() }
         }
     }
 
     override fun finishWithError(error: Throwable) {
         safelyDeliver {
-            errorCallback?.invoke(error)
-            finishCallback?.invoke()
+            errorCallbacks.forEach { it.invoke(error) }
+            finishCallbacks.forEach { it.invoke() }
         }
     }
 
     override fun execute(input: I) {
         safelyDeliver {
-            startCallback?.invoke()
+            startCallbacks.forEach { it.invoke() }
         }
 
         this.innerTask.execute(input)

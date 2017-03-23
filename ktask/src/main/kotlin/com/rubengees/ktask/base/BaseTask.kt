@@ -18,27 +18,27 @@ abstract class BaseTask<I, O> : Task<I, O>() {
     /**
      * The callback to be invoked when execution of the task starts.
      */
-    protected var startCallback: (() -> Unit)? = null
+    protected val startCallbacks = mutableListOf<() -> Unit>()
 
     /**
      * The callback to be invoked when execution of the task finishes.
      */
-    protected var finishCallback: (() -> Unit)? = null
+    protected val finishCallbacks = mutableListOf<() -> Unit>()
 
     /**
      * The callback to be invoked when execution of the task finishes with an error.
      */
-    protected var errorCallback: ((Throwable) -> Unit)? = null
+    protected val errorCallbacks = mutableListOf<(Throwable) -> Unit>()
 
     /**
      * The callback to be invoked when execution of the task finishes successful.
      */
-    protected var successCallback: ((O) -> Unit)? = null
+    protected val successCallbacks = mutableListOf<(O) -> Unit>()
 
-    override fun onStart(callback: (() -> Unit)?) = this.apply { startCallback = callback }
-    override fun onSuccess(callback: ((O) -> Unit)?) = this.apply { successCallback = callback }
-    override fun onError(callback: ((Throwable) -> Unit)?) = this.apply { errorCallback = callback }
-    override fun onFinish(callback: (() -> Unit)?) = this.apply { finishCallback = callback }
+    override fun onStart(callback: () -> Unit) = this.apply { startCallbacks.add(callback) }
+    override fun onSuccess(callback: (O) -> Unit) = this.apply { successCallbacks.add(callback) }
+    override fun onError(callback: (Throwable) -> Unit) = this.apply { errorCallbacks.add(callback) }
+    override fun onFinish(callback: () -> Unit) = this.apply { finishCallbacks.add(callback) }
 
     override fun forceExecute(input: I) {
         cancel()
@@ -53,17 +53,17 @@ abstract class BaseTask<I, O> : Task<I, O>() {
     }
 
     override fun retainingDestroy() {
-        startCallback = null
-        successCallback = null
-        errorCallback = null
-        finishCallback = null
+        startCallbacks.clear()
+        successCallbacks.clear()
+        errorCallbacks.clear()
+        finishCallbacks.clear()
     }
 
     override fun destroy() {
-        startCallback = null
-        successCallback = null
-        errorCallback = null
-        finishCallback = null
+        startCallbacks.clear()
+        successCallbacks.clear()
+        errorCallbacks.clear()
+        finishCallbacks.clear()
     }
 
     /**
@@ -74,7 +74,7 @@ abstract class BaseTask<I, O> : Task<I, O>() {
      */
     open protected fun start(action: () -> Unit) {
         if (!isWorking) {
-            startCallback?.invoke()
+            startCallbacks.forEach { it.invoke() }
 
             action.invoke()
         }
@@ -86,8 +86,8 @@ abstract class BaseTask<I, O> : Task<I, O>() {
      * This calls the appropriate callbacks with the [result].
      */
     open protected fun finishSuccessful(result: O) {
-        successCallback?.invoke(result)
-        finishCallback?.invoke()
+        successCallbacks.forEach { it.invoke(result) }
+        finishCallbacks.forEach { it.invoke() }
     }
 
     /**
@@ -96,8 +96,8 @@ abstract class BaseTask<I, O> : Task<I, O>() {
      * This calls the appropriate callbacks with the [error].
      */
     open protected fun finishWithError(error: Throwable) {
-        errorCallback?.invoke(error)
-        finishCallback?.invoke()
+        errorCallbacks.forEach { it.invoke(error) }
+        finishCallbacks.forEach { it.invoke() }
     }
 
     override fun restoreCallbacks(from: Task<I, O>) {
@@ -105,7 +105,7 @@ abstract class BaseTask<I, O> : Task<I, O>() {
             throw IllegalArgumentException("The passed task must have the same type.")
         }
 
-        startCallback = from.startCallback
-        finishCallback = from.finishCallback
+        startCallbacks.addAll(from.startCallbacks)
+        finishCallbacks.addAll(from.finishCallbacks)
     }
 }

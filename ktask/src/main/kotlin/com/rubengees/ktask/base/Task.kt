@@ -95,21 +95,21 @@ abstract class Task<I, O> {
      *
      * @return This task.
      */
-    abstract fun onStart(callback: (() -> Unit)?): Task<I, O>
+    abstract fun onStart(callback: () -> Unit): Task<I, O>
 
     /**
      * Assigns the [callback] to be called when the task executed successfully.
      *
      * @return This task.
      */
-    abstract fun onSuccess(callback: ((O) -> Unit)?): Task<I, O>
+    abstract fun onSuccess(callback: (O) -> Unit): Task<I, O>
 
     /**
      * Assigns the [callback] to be called when the task failed with an error.
      *
      * @return This task.
      */
-    abstract fun onError(callback: ((Throwable) -> Unit)?): Task<I, O>
+    abstract fun onError(callback: (Throwable) -> Unit): Task<I, O>
 
     /**
      * Assigns the [callback] to be called when the task finished. This means, that it either executed successfully or
@@ -119,7 +119,7 @@ abstract class Task<I, O> {
      *
      * @return This task.
      */
-    abstract fun onFinish(callback: (() -> Unit)?): Task<I, O>
+    abstract fun onFinish(callback: () -> Unit): Task<I, O>
 
     /**
      * Assigns the [callback] to be called when the first [LeafTask] is started. This is the leftmost leaf in the tree
@@ -127,7 +127,7 @@ abstract class Task<I, O> {
      *
      * @return This task.
      */
-    abstract fun onInnerStart(callback: (() -> Unit)?): Task<I, O>
+    abstract fun onInnerStart(callback: () -> Unit): Task<I, O>
 
     /**
      * Only for internal use.

@@ -22,7 +22,7 @@ abstract class BranchTask<I, O, TI, TO> : BaseTask<I, O>() {
     override val isWorking: Boolean
         get() = innerTask.isWorking
 
-    override fun onInnerStart(callback: (() -> Unit)?) = this.apply { innerTask.onInnerStart(callback) }
+    override fun onInnerStart(callback: () -> Unit) = this.apply { innerTask.onInnerStart(callback) }
 
     override fun cancel() {
         innerTask.cancel()
