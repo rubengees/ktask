@@ -136,7 +136,7 @@ class CacheTask<I, O>(override val innerTask: Task<I, O>, cacheStrategy: CacheSt
         RESULT,
 
         /**
-         * Only errors shall be cached
+         * Only errors shall be cached.
          */
         ERROR
     }

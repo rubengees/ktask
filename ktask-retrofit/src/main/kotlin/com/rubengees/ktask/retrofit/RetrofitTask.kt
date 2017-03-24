@@ -2,8 +2,6 @@ package com.rubengees.ktask.retrofit
 
 import com.rubengees.ktask.base.LeafTask
 import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.io.IOException
 
 /**
@@ -22,29 +20,31 @@ class RetrofitTask<O> : LeafTask<Call<O>, O>() {
         start {
             call = input
 
-            input.enqueue(object : Callback<O> {
-                override fun onResponse(call: Call<O>, response: Response<O>) {
-                    cancel()
+            try {
+                val response = input.execute()
 
-                    if (response.isSuccessful) {
-                        finishSuccessful(response.body())
-                    } else {
-                        finishWithError(IOException())
-                    }
+                internalCancel()
+
+                if (response.isSuccessful) {
+                    finishSuccessful(response.body())
+                } else {
+                    finishWithError(IOException())
                 }
+            } catch (error: Throwable) {
+                internalCancel()
 
-                override fun onFailure(call: Call<O>, error: Throwable) {
-                    cancel()
-
-                    finishWithError(error as Exception)
-                }
-            })
+                finishWithError(error as Exception)
+            }
         }
     }
 
     override fun cancel() {
         super.cancel()
 
+        internalCancel()
+    }
+
+    private fun internalCancel() {
         call?.cancel()
         call = null
     }

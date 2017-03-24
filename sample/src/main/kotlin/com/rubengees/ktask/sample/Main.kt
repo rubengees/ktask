@@ -2,7 +2,7 @@
 
 package com.rubengees.ktask.sample
 
-import com.rubengees.ktask.retrofit.retrofitTask
+import com.rubengees.ktask.retrofit.asyncRetrofitTask
 import com.rubengees.ktask.util.TaskBuilder
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -18,7 +18,7 @@ fun main(args: Array<String>) {
 
     val api = retrofit.create(GitHubApi::class.java)
 
-    TaskBuilder.retrofitTask<RepositoryInfo>()
+    TaskBuilder.asyncRetrofitTask<RepositoryInfo>()
             .onStart {
                 println("Asynchronous loading started!\n")
             }

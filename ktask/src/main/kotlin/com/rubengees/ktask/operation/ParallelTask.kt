@@ -54,10 +54,7 @@ class ParallelTask<LI, RI, LM, RM, O>(override val leftInnerTask: Task<LI, LM>,
     override fun cancel() {
         super.cancel()
 
-        leftResult = null
-        rightResult = null
-        leftError = null
-        rightError = null
+        internalCancel()
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -75,7 +72,7 @@ class ParallelTask<LI, RI, LM, RM, O>(override val leftInnerTask: Task<LI, LM>,
             val safeRightError = rightError
 
             if (safeRightResult != null) {
-                cancel()
+                internalCancel()
 
                 this.zipFunction?.let { function ->
                     try {
@@ -85,7 +82,7 @@ class ParallelTask<LI, RI, LM, RM, O>(override val leftInnerTask: Task<LI, LM>,
                     }
                 }
             } else if (safeRightError != null) {
-                cancel()
+                internalCancel()
 
                 finishWithError(PartialTaskException(safeRightError, it))
             } else {
@@ -98,18 +95,18 @@ class ParallelTask<LI, RI, LM, RM, O>(override val leftInnerTask: Task<LI, LM>,
             val safeRightError = rightError
 
             if (safeRightResult != null) {
-                cancel()
+                internalCancel()
 
                 finishWithError(PartialTaskException(it, safeRightResult))
             } else if (safeRightError != null) {
-                cancel()
+                internalCancel()
 
                 finishWithError(FullTaskException(safeRightError, it))
             } else {
                 if (awaitRightResultOnError) {
                     leftError = it
                 } else {
-                    cancel()
+                    internalCancel()
 
                     finishWithError(it)
                 }
@@ -121,7 +118,7 @@ class ParallelTask<LI, RI, LM, RM, O>(override val leftInnerTask: Task<LI, LM>,
             val safeLeftError = leftError
 
             if (safeLeftResult != null) {
-                cancel()
+                internalCancel()
 
                 this.zipFunction?.let { function ->
                     try {
@@ -131,7 +128,7 @@ class ParallelTask<LI, RI, LM, RM, O>(override val leftInnerTask: Task<LI, LM>,
                     }
                 }
             } else if (safeLeftError != null) {
-                cancel()
+                internalCancel()
 
                 finishWithError(PartialTaskException(safeLeftError, it))
             } else {
@@ -144,22 +141,29 @@ class ParallelTask<LI, RI, LM, RM, O>(override val leftInnerTask: Task<LI, LM>,
             val safeLeftError = leftError
 
             if (safeLeftResult != null) {
-                cancel()
+                internalCancel()
 
                 finishWithError(PartialTaskException(it, safeLeftResult))
             } else if (safeLeftError != null) {
-                cancel()
+                internalCancel()
 
                 finishWithError(FullTaskException(safeLeftError, it))
             } else {
                 if (awaitLeftResultOnError) {
                     rightError = it
                 } else {
-                    cancel()
+                    internalCancel()
 
                     finishWithError(it)
                 }
             }
         }
+    }
+
+    private fun internalCancel() {
+        leftResult = null
+        rightResult = null
+        leftError = null
+        rightError = null
     }
 }

@@ -26,6 +26,12 @@ class MapTask<I, M, O>(override val innerTask: Task<I, M>, mapFunction: (M) -> O
         }
     }
 
+    override fun retainingDestroy() {
+        super.retainingDestroy()
+
+        mapFunction = null
+    }
+
     @Suppress("UNCHECKED_CAST")
     override fun restoreCallbacks(from: Task<I, O>) {
         super.restoreCallbacks(from)

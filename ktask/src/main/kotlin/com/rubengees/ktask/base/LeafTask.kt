@@ -13,18 +13,12 @@ package com.rubengees.ktask.base
  */
 abstract class LeafTask<I, O> : BaseTask<I, O>() {
 
-    override fun onInnerStart(callback: () -> Unit) = this.apply { startCallbacks.add(callback) }
-
-    override fun cancel() {
-
-    }
+    override fun onInnerStart(callback: () -> Unit) = onStart(callback)
 
     override fun reset() {
-        cancel()
-    }
+        super.reset()
 
-    override fun retainingDestroy() {
-        super.retainingDestroy()
+        cancel()
     }
 
     override fun destroy() {

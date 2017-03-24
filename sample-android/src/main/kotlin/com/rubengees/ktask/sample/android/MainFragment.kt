@@ -13,7 +13,7 @@ import android.widget.Button
 import android.widget.TextView
 import butterknife.bindView
 import com.rubengees.ktask.android.bindToLifecycle
-import com.rubengees.ktask.retrofit.retrofitTask
+import com.rubengees.ktask.retrofit.asyncRetrofitTask
 import com.rubengees.ktask.sample.RepositoryInfo
 import com.rubengees.ktask.sample.Utils
 import com.rubengees.ktask.util.TaskBuilder
@@ -34,7 +34,7 @@ class MainFragment : Fragment() {
     }
 
     private val task by lazy {
-        TaskBuilder.retrofitTask<RepositoryInfo>()
+        TaskBuilder.asyncRetrofitTask<RepositoryInfo>()
                 .cache()
                 .bindToLifecycle(this)
                 .onInnerStart {

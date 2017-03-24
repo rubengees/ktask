@@ -154,8 +154,16 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
      */
     constructor(context: View, innerTask: Task<I, O>, tag: String) : this(findActivityForView(context), innerTask, tag)
 
+    override fun onInnerStart(callback: () -> Unit) = this.apply {
+        innerTask.onInnerStart {
+            safelyDeliver { callback.invoke() }
+        }
+    }
+
     override fun start(action: () -> Unit) {
-        if (!isWorking) {
+        if (!isWorking && context?.isFinishing ?: false) {
+            isCancelled = false
+
             safelyDeliver {
                 startCallbacks.forEach { it.invoke() }
             }
@@ -193,8 +201,8 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
     }
 
     private fun safelyDeliver(action: () -> Unit) {
-        context?.apply {
-            if (!this.isFinishing) {
+        if (!isCancelled) {
+            context?.apply {
                 handler.post { action.invoke() }
             }
         }
