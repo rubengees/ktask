@@ -161,7 +161,7 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
     }
 
     override fun start(action: () -> Unit) {
-        if (!isWorking && context?.isFinishing ?: false) {
+        if (!(isWorking || (context?.isFinishing ?: false))) {
             isCancelled = false
 
             safelyDeliver {
@@ -187,11 +187,9 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
     }
 
     override fun execute(input: I) {
-        safelyDeliver {
-            startCallbacks.forEach { it.invoke() }
+        start {
+            this.innerTask.execute(input)
         }
-
-        this.innerTask.execute(input)
     }
 
     override fun retainingDestroy() {
