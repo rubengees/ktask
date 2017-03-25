@@ -2,6 +2,7 @@ package com.rubengees.ktask.util
 
 import com.rubengees.ktask.base.Task
 import com.rubengees.ktask.operation.*
+import com.rubengees.ktask.operation.CacheTask.CacheStrategy
 
 /**
  * Utility class for constructing tasks in a fluent way.
@@ -21,7 +22,7 @@ class TaskBuilder<I, O, T : Task<I, O>> private constructor(private var currentT
     /**
      * Caches results of the previous tasks.
      */
-    fun cache(strategy: CacheTask.CacheStrategy = CacheTask.CacheStrategy.FULL) = task(CacheTask(currentTask, strategy))
+    fun cache(strategy: CacheStrategy = CacheStrategy.FULL) = task(CacheTask(currentTask, strategy))
 
     /**
      * Modifies the result line, to also return the input of the previous task.
@@ -49,9 +50,9 @@ class TaskBuilder<I, O, T : Task<I, O>> private constructor(private var currentT
      *
      * Note that this requires both tasks, to be [AsynchronousTask]s at some point.
      */
-    fun <OI, OO, FO> parallelWith(other: TaskBuilder<OI, OO, Task<OI, OO>>, zipFunction: (O, OO) -> FO,
-                                  awaitLeftResultOnError: Boolean = false,
-                                  awaitRightResultOnError: Boolean = false)
+    fun <OI, OO, T : Task<OI, OO>, FO> parallelWith(other: TaskBuilder<OI, OO, T>, zipFunction: (O, OO) -> FO,
+                                                    awaitLeftResultOnError: Boolean = false,
+                                                    awaitRightResultOnError: Boolean = false)
             = task(ParallelTask(currentTask, other.build(), zipFunction, awaitLeftResultOnError,
             awaitRightResultOnError))
 
@@ -67,7 +68,7 @@ class TaskBuilder<I, O, T : Task<I, O>> private constructor(private var currentT
     /**
      * Runs the previous task with the given [TaskBuilder] in series (the previous task first).
      */
-    fun <OI, OO> then(other: TaskBuilder<OI, OO, Task<OI, OO>>, mapFunction: (O) -> OI = {
+    fun <OI, OO, T : Task<OI, OO>> then(other: TaskBuilder<OI, OO, T>, mapFunction: (O) -> OI = {
         @Suppress("UNCHECKED_CAST")
         it as OI
     }) = task(StreamTask(currentTask, other.build(), mapFunction))
