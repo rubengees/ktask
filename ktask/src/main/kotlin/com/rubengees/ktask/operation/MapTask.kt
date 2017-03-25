@@ -17,7 +17,7 @@ class MapTask<I, M, O>(override val innerTask: Task<I, M>, mapFunction: (M) -> O
     var mapFunction: ((M) -> O)? = mapFunction
 
     init {
-        restoreCallbacks(this)
+        initCallbacks()
     }
 
     override fun execute(input: I) {
@@ -42,6 +42,10 @@ class MapTask<I, M, O>(override val innerTask: Task<I, M>, mapFunction: (M) -> O
 
         mapFunction = from.mapFunction as ((M) -> O)?
 
+        initCallbacks()
+    }
+
+    private fun initCallbacks() {
         innerTask.onSuccess {
             this.mapFunction?.let { function ->
                 try {

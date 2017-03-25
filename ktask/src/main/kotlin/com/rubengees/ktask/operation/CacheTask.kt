@@ -48,7 +48,7 @@ class CacheTask<I, O>(override val innerTask: Task<I, O>, cacheStrategy: CacheSt
         private set
 
     init {
-        restoreCallbacks(this)
+        initCallbacks()
     }
 
     override fun execute(input: I) {
@@ -79,6 +79,10 @@ class CacheTask<I, O>(override val innerTask: Task<I, O>, cacheStrategy: CacheSt
     override fun restoreCallbacks(from: Task<I, O>) {
         super.restoreCallbacks(from)
 
+        initCallbacks()
+    }
+
+    private fun initCallbacks() {
         innerTask.onSuccess {
             cachedResult = if (shouldCacheResult) it else null
 

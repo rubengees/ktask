@@ -41,7 +41,7 @@ class ParallelTask<LI, RI, LM, RM, O>(override val leftInnerTask: Task<LI, LM>,
     private var rightError: Throwable? = null
 
     init {
-        restoreCallbacks(this)
+        initCallbacks()
     }
 
     override fun execute(input: Pair<LI, RI>) {
@@ -67,6 +67,10 @@ class ParallelTask<LI, RI, LM, RM, O>(override val leftInnerTask: Task<LI, LM>,
 
         zipFunction = from.zipFunction as ((LM, RM) -> O)?
 
+        initCallbacks()
+    }
+
+    private fun initCallbacks() {
         leftInnerTask.onSuccess {
             val safeRightResult = rightResult
             val safeRightError = rightError

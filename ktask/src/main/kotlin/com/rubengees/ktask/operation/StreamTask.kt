@@ -27,7 +27,7 @@ class StreamTask<LI, LO, RI, RO>(override val leftInnerTask: Task<LI, LO>,
     private var mapFunction: ((LO) -> RI)? = mapFunction
 
     init {
-        restoreCallbacks(this)
+        initCallbacks()
     }
 
     override fun execute(input: LI) {
@@ -53,6 +53,10 @@ class StreamTask<LI, LO, RI, RO>(override val leftInnerTask: Task<LI, LO>,
 
         mapFunction = from.mapFunction as ((LO) -> RI)?
 
+        initCallbacks()
+    }
+
+    private fun initCallbacks() {
         leftInnerTask.onSuccess {
             this.mapFunction?.let { function ->
                 try {

@@ -20,7 +20,7 @@ class InputEchoTask<I, O>(override val innerTask: Task<I, O>) : BranchTask<I, Pa
     private var currentInput: I? = null
 
     init {
-        restoreCallbacks(this)
+        initCallbacks()
     }
 
     override fun execute(input: I) {
@@ -40,6 +40,10 @@ class InputEchoTask<I, O>(override val innerTask: Task<I, O>) : BranchTask<I, Pa
     override fun restoreCallbacks(from: Task<I, Pair<I, O>>) {
         super.restoreCallbacks(from)
 
+        initCallbacks()
+    }
+
+    private fun initCallbacks() {
         innerTask.onSuccess {
             val safeInput = currentInput
 

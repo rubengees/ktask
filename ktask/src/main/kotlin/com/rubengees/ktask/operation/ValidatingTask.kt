@@ -19,7 +19,7 @@ class ValidatingTask<I, O>(override val innerTask: Task<I, O>, validationFunctio
     var validationFunction: ((I) -> Unit)? = validationFunction
 
     init {
-        restoreCallbacks(this)
+        initCallbacks()
     }
 
     override fun execute(input: I) {
@@ -52,6 +52,10 @@ class ValidatingTask<I, O>(override val innerTask: Task<I, O>, validationFunctio
 
         validationFunction = from.validationFunction as ((I) -> Unit)?
 
+        initCallbacks()
+    }
+
+    private fun initCallbacks() {
         innerTask.onSuccess {
             finishSuccessful(it)
         }

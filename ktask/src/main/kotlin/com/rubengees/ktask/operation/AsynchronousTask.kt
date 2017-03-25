@@ -16,7 +16,7 @@ class AsynchronousTask<I, O>(override val innerTask: Task<I, O>) : BranchTask<I,
         get() = innerTask.isWorking
 
     init {
-        restoreCallbacks(this)
+        initCallbacks()
     }
 
     override fun execute(input: I) {
@@ -36,6 +36,10 @@ class AsynchronousTask<I, O>(override val innerTask: Task<I, O>) : BranchTask<I,
     override fun restoreCallbacks(from: Task<I, O>) {
         super.restoreCallbacks(from)
 
+        initCallbacks()
+    }
+
+    private fun initCallbacks() {
         innerTask.onSuccess {
             internalCancel()
 
