@@ -34,7 +34,7 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
         get() = innerTask.isWorking
 
     override val innerTask: Task<I, O>
-        get() = workerFragment.innerTask
+        get() = workerFragment.innerTask ?: throw IllegalStateException("innerTask cannot be null")
 
     private val workerFragment: RetainedWorkerFragment<I, O>
     private var context: Activity?
@@ -70,9 +70,15 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
 
         @Suppress("UNCHECKED_CAST")
         if (existingWorker is RetainedWorkerFragment<*, *>) {
-            workerFragment = existingWorker as RetainedWorkerFragment<I, O>
+            if (existingWorker.innerTask == null) {
+                workerFragment = RetainedWorkerFragment(innerTask).apply {
+                    context.supportFragmentManager.beginTransaction().add(this, tag).commitNow()
+                }
+            } else {
+                workerFragment = existingWorker as RetainedWorkerFragment<I, O>
 
-            this.innerTask.restoreCallbacks(innerTask)
+                this.innerTask.restoreCallbacks(innerTask)
+            }
         } else {
             workerFragment = RetainedWorkerFragment(innerTask).apply {
                 context.supportFragmentManager.beginTransaction().add(this, tag).commitNow()
@@ -118,9 +124,15 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
 
         @Suppress("UNCHECKED_CAST")
         if (existingWorker is RetainedWorkerFragment<*, *>) {
-            workerFragment = existingWorker as RetainedWorkerFragment<I, O>
+            if (existingWorker.innerTask == null) {
+                workerFragment = RetainedWorkerFragment(innerTask).apply {
+                    context.childFragmentManager.beginTransaction().add(this, tag).commitNow()
+                }
+            } else {
+                workerFragment = existingWorker as RetainedWorkerFragment<I, O>
 
-            this.innerTask.restoreCallbacks(innerTask)
+                this.innerTask.restoreCallbacks(innerTask)
+            }
         } else {
             workerFragment = RetainedWorkerFragment(innerTask).apply {
                 context.childFragmentManager.beginTransaction().add(this, tag).commitNow()
@@ -206,7 +218,10 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
         }
     }
 
-    internal class RetainedWorkerFragment<I, O>(var innerTask: Task<I, O>) : Fragment() {
+    class RetainedWorkerFragment<I, O>(var innerTask: Task<I, O>?) : Fragment() {
+
+        constructor() : this(null)
+
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
 
