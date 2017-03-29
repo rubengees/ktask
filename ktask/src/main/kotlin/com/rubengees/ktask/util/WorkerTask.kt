@@ -21,7 +21,7 @@ abstract class WorkerTask<I, O> : LeafTask<I, O>() {
 
             try {
                 finishSuccessful(work(input))
-            } catch(error: Exception) {
+            } catch(error: Throwable) {
                 finishWithError(error)
             }
         }

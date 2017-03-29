@@ -52,19 +52,19 @@ class CacheTask<I, O>(override val innerTask: Task<I, O>, cacheStrategy: CacheSt
     }
 
     override fun execute(input: I) {
-        cachedResult?.let {
-            finishSuccessful(it)
-
-            return
-        }
-
-        cachedError?.let {
-            finishWithError(it)
-
-            return
-        }
-
         start {
+            cachedResult?.let {
+                finishSuccessful(it)
+
+                return@start
+            }
+
+            cachedError?.let {
+                finishWithError(it)
+
+                return@start
+            }
+
             innerTask.execute(input)
         }
     }

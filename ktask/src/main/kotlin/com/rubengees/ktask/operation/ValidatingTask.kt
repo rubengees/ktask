@@ -23,15 +23,15 @@ class ValidatingTask<I, O>(override val innerTask: Task<I, O>, validationFunctio
     }
 
     override fun execute(input: I) {
-        try {
-            this.validationFunction?.invoke(input)
-        } catch (error: Exception) {
-            finishWithError(error)
-
-            return
-        }
-
         start {
+            try {
+                this.validationFunction?.invoke(input)
+            } catch (error: Throwable) {
+                finishWithError(error)
+
+                return@start
+            }
+
             innerTask.execute(input)
         }
     }
