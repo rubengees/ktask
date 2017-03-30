@@ -13,6 +13,7 @@ import android.support.v4.app.FragmentManager
 import android.view.View
 import com.rubengees.ktask.base.BranchTask
 import com.rubengees.ktask.base.Task
+import java.lang.ref.WeakReference
 
 /**
  * Task for working in a safe manner with the Android Lifecycle.
@@ -37,7 +38,7 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
         get() = workerFragment.innerTask ?: throw IllegalStateException("innerTask cannot be null")
 
     private val workerFragment: RetainedWorkerFragment<I, O>
-    private var context: Activity?
+    private var context: WeakReference<Activity?>
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -64,7 +65,7 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
      */
     @SuppressLint("CommitTransaction")
     constructor(context: FragmentActivity, innerTask: Task<I, O>, tag: String) {
-        this.context = context
+        this.context = WeakReference(context)
 
         val existingWorker = context.supportFragmentManager.findFragmentByTag(tag)
 
@@ -118,7 +119,7 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
      * @param tag The tag of this task. This has to be unique.
      */
     constructor(context: Fragment, innerTask: Task<I, O>, tag: String) {
-        this.context = context.activity
+        this.context = WeakReference(context.activity)
 
         val existingWorker = context.childFragmentManager.findFragmentByTag(tag)
 
@@ -173,7 +174,7 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
     }
 
     override fun start(action: () -> Unit) {
-        if (!(isWorking || (context?.isFinishing ?: false))) {
+        if (!(isWorking || (context.get()?.isFinishing ?: false))) {
             isCancelled = false
 
             safelyDeliver {
@@ -207,14 +208,18 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
     override fun retainingDestroy() {
         super.retainingDestroy()
 
-        context = null
+        context.clear()
+    }
+
+    override fun destroy() {
+        super.destroy()
+
+        context.clear()
     }
 
     private fun safelyDeliver(action: () -> Unit) {
         if (!isCancelled) {
-            context?.apply {
-                handler.post { action.invoke() }
-            }
+            handler.post { action.invoke() }
         }
     }
 
