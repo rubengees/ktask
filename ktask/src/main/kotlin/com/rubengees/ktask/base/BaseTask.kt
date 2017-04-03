@@ -90,10 +90,6 @@ abstract class BaseTask<I, O> : Task<I, O> {
         }
     }
 
-    fun lol(test: String) {
-        println(test)
-    }
-
     /**
      * Convenience function for inheritors to mark the task as finished with success.
      *
