@@ -45,7 +45,6 @@ class StreamTask<LI, LO, RI, RO>(override val leftInnerTask: Task<LI, LO>,
     @Suppress("UNCHECKED_CAST")
     override fun restoreCallbacks(from: Task<LI, RO>) {
         super.restoreCallbacks(from)
-        super.restoreCallbacks(from)
 
         if (from !is StreamTask<*, *, *, *>) {
             throw IllegalArgumentException("The passed task must have the same type.")
