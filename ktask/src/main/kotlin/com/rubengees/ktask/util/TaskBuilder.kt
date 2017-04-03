@@ -35,6 +35,11 @@ class TaskBuilder<I, O, T : Task<I, O>> private constructor(private var currentT
     fun <M> map(function: (O) -> M) = task(MapTask(currentTask, function))
 
     /**
+     * Maps the input to a new type.
+     */
+    fun <M> mapInput(function: (M) -> I) = TaskBuilder.task(MapInputTask(currentTask, function))
+
+    /**
      * Runs the previous task in parallel with another given task.
      *
      * Note that this requires both tasks, to be [AsynchronousTask]s at some point.
