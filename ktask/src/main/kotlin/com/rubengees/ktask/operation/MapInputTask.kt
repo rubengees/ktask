@@ -42,7 +42,7 @@ class MapInputTask<NI, I, O>(override val innerTask: Task<I, O>, mapFunction: (N
     override fun restoreCallbacks(from: Task<NI, O>) {
         super.restoreCallbacks(from)
 
-        if (from !is MapTask<*, *, *>) {
+        if (from !is MapInputTask<*, *, *>) {
             throw IllegalArgumentException("The passed task must have the same type.")
         }
 

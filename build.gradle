@@ -1,8 +1,8 @@
 ext {
     preDexLibs = !project.hasProperty('disablePreDex')
 
-    version = '0.2.6'
-    versionCode = 8
+    version = '0.2.7'
+    versionCode = 9
     minSdkVersion = 14
     targetSdkVersion = 25
     compileSdkVersion = 25

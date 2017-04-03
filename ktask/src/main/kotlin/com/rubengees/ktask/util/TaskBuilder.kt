@@ -37,7 +37,7 @@ class TaskBuilder<I, O, T : Task<I, O>> private constructor(private var currentT
     /**
      * Maps the input to a new type.
      */
-    fun <M> mapInput(function: (M) -> I) = TaskBuilder.task(MapInputTask(currentTask, function))
+    fun <NI> mapInput(function: (NI) -> I) = TaskBuilder.task(MapInputTask(currentTask, function))
 
     /**
      * Runs the previous task in parallel with another given task.
