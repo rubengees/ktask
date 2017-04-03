@@ -165,6 +165,9 @@ class ParallelTask<LI, RI, LM, RM, O>(override val leftInnerTask: Task<LI, LM>,
     }
 
     private fun internalCancel() {
+        leftInnerTask.cancel()
+        rightInnerTask.cancel()
+
         leftResult = null
         rightResult = null
         leftError = null
