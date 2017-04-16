@@ -38,7 +38,7 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
         get() = workerFragment.innerTask ?: throw IllegalStateException("innerTask cannot be null")
 
     private val workerFragment: RetainedWorkerFragment<I, O>
-    private var context: WeakReference<Activity?>
+    private var context: WeakReference<Any?>
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -119,7 +119,7 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
      * @param tag The tag of this task. This has to be unique.
      */
     constructor(context: Fragment, innerTask: Task<I, O>, tag: String) {
-        this.context = WeakReference(context.activity)
+        this.context = WeakReference(context)
 
         val existingWorker = context.childFragmentManager.findFragmentByTag(tag)
 
@@ -174,29 +174,23 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
     }
 
     override fun start(action: () -> Unit) {
-        if (!(isWorking || (context.get()?.isFinishing ?: false))) {
+        if (!isWorking) {
             isCancelled = false
 
-            safelyDeliver {
-                startCallbacks.forEach { it.invoke() }
-            }
+            startCallbacks.forEach { safelyDeliver { it.invoke() } }
 
             action.invoke()
         }
     }
 
     override fun finishSuccessful(result: O) {
-        safelyDeliver {
-            successCallbacks.forEach { it.invoke(result) }
-            finishCallbacks.forEach { it.invoke() }
-        }
+        successCallbacks.forEach { safelyDeliver { it.invoke(result) } }
+        finishCallbacks.forEach { safelyDeliver { it.invoke() } }
     }
 
     override fun finishWithError(error: Throwable) {
-        safelyDeliver {
-            errorCallbacks.forEach { it.invoke(error) }
-            finishCallbacks.forEach { it.invoke() }
-        }
+        errorCallbacks.forEach { safelyDeliver { it.invoke(error) } }
+        finishCallbacks.forEach { safelyDeliver { it.invoke() } }
     }
 
     override fun execute(input: I) {
@@ -219,7 +213,16 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
 
     private fun safelyDeliver(action: () -> Unit) {
         if (!isCancelled) {
-            handler.post { action.invoke() }
+            val currentContext = context.get()
+            val canDeliver = when (currentContext) {
+                is FragmentActivity -> !currentContext.isFinishing
+                is Fragment -> currentContext.isAdded && currentContext.view != null
+                else -> false
+            }
+
+            if (canDeliver) {
+                handler.post { action.invoke() }
+            }
         }
     }
 

@@ -36,9 +36,6 @@ class MainFragment : Fragment() {
     private val task by lazy {
         TaskBuilder.asyncRetrofitTask<RepositoryInfo>()
                 .cache()
-                .validateBefore {
-                    12 == 2 * 6
-                }
                 .bindToLifecycle(this)
                 .onInnerStart {
                     content.visibility = View.INVISIBLE
