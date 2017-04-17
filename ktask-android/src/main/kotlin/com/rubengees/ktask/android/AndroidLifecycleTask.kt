@@ -216,7 +216,7 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
             val currentContext = context.get()
             val canDeliver = when (currentContext) {
                 is FragmentActivity -> !currentContext.isFinishing
-                is Fragment -> currentContext.isAdded && currentContext.view != null
+                is Fragment -> currentContext.isAdded
                 else -> false
             }
 
