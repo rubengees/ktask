@@ -22,6 +22,8 @@ class AttemptTask<I, O>(override val leftInnerTask: Task<I, O>,
         initCallbacks()
     }
 
+    override fun onInnerStart(callback: () -> Unit) = this.apply { startCallbacks.add(callback) }
+
     override fun execute(input: I) {
         start {
             currentInput = input
