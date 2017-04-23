@@ -9,7 +9,7 @@ import com.rubengees.ktask.operation.CacheTask.CacheStrategy
  *
  * @author Ruben Gees
  */
-class TaskBuilder<I, O, T : Task<I, O>> private constructor(private var currentTask: T) {
+class TaskBuilder<I, O, T : Task<I, O>> private constructor(private val currentTask: T) {
 
     companion object {
 
@@ -17,6 +17,11 @@ class TaskBuilder<I, O, T : Task<I, O>> private constructor(private var currentT
          * Creates a new [TaskBuilder] from the given task.
          */
         fun <I, O, T : Task<I, O>> task(task: T) = TaskBuilder(task)
+
+        /**
+         * Creates a new [TaskBuilder] with an [AttemptTask] and given [leftTask] and [rightTask] as root.
+         */
+        fun <I, O> attemptTask(leftTask: Task<I, O>, rightTask: Task<I, O>) = task(AttemptTask(leftTask, rightTask))
     }
 
     /**
@@ -37,29 +42,29 @@ class TaskBuilder<I, O, T : Task<I, O>> private constructor(private var currentT
     /**
      * Maps the input to a new type.
      */
-    fun <NI> mapInput(function: (NI) -> I) = TaskBuilder.task(MapInputTask(currentTask, function))
+    fun <OI> mapInput(function: (OI) -> I) = TaskBuilder.task(MapInputTask(currentTask, function))
 
     /**
      * Runs the previous task in parallel with another given task.
      *
      * Note that this requires both tasks, to be [AsynchronousTask]s at some point.
      */
-    fun <OI, OO, FO> parallelWith(other: Task<OI, OO>, zipFunction: (O, OO) -> FO,
-                                  awaitLeftResultOnError: Boolean = false,
-                                  awaitRightResultOnError: Boolean = false)
-            = task(ParallelTask(currentTask, other, zipFunction, awaitLeftResultOnError,
-            awaitRightResultOnError))
+    fun <OI, OO, FO> parallelWith(
+            other: Task<OI, OO>, zipFunction: (O, OO) -> FO,
+            awaitLeftResultOnError: Boolean = false,
+            awaitRightResultOnError: Boolean = false
+    ) = task(ParallelTask(currentTask, other, zipFunction, awaitLeftResultOnError, awaitRightResultOnError))
 
     /**
      * Runs the previous task in parallel with another given [TaskBuilder].
      *
      * Note that this requires both tasks, to be [AsynchronousTask]s at some point.
      */
-    fun <OI, OO, T : Task<OI, OO>, FO> parallelWith(other: TaskBuilder<OI, OO, T>, zipFunction: (O, OO) -> FO,
-                                                    awaitLeftResultOnError: Boolean = false,
-                                                    awaitRightResultOnError: Boolean = false)
-            = task(ParallelTask(currentTask, other.build(), zipFunction, awaitLeftResultOnError,
-            awaitRightResultOnError))
+    fun <OI, OO, T : Task<OI, OO>, FO> parallelWith(
+            other: TaskBuilder<OI, OO, T>, zipFunction: (O, OO) -> FO,
+            awaitLeftResultOnError: Boolean = false,
+            awaitRightResultOnError: Boolean = false
+    ) = task(ParallelTask(currentTask, other.build(), zipFunction, awaitLeftResultOnError, awaitRightResultOnError))
 
     /**
      * Runs the previous task with the given in series (the previous task first).
@@ -109,7 +114,7 @@ class TaskBuilder<I, O, T : Task<I, O>> private constructor(private var currentT
     fun onFinish(callback: () -> Unit) = this.apply { currentTask.onFinish(callback) }
 
     /**
-     * Sets a the leftmost [com.rubengees.ktask.base.LeafTask], called on start.
+     * Sets a new callback on the leftmost inner [com.rubengees.ktask.base.LeafTask], called on start.
      */
     fun onInnerStart(callback: () -> Unit) = this.apply { currentTask.onInnerStart(callback) }
 

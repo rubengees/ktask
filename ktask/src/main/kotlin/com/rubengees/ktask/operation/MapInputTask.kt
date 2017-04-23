@@ -6,21 +6,21 @@ import com.rubengees.ktask.base.Task
 /**
  * Task for mapping the input to another type or value, specified by the [mapFunction].
  *
- * @param NI The new type of input.
+ * @param OI The old type of input.
  * @param I The type of input of the [innerTask].
  * @param O The type of output.
  *
  * @author Ruben Gees
  */
-class MapInputTask<NI, I, O>(override val innerTask: Task<I, O>, mapFunction: (NI) -> I) : BranchTask<NI, O, I, O>() {
+class MapInputTask<OI, I, O>(override val innerTask: Task<I, O>, mapFunction: (OI) -> I) : BranchTask<OI, O, I, O>() {
 
-    var mapFunction: ((NI) -> I)? = mapFunction
+    var mapFunction: ((OI) -> I)? = mapFunction
 
     init {
         initCallbacks()
     }
 
-    override fun execute(input: NI) {
+    override fun execute(input: OI) {
         start {
             this.mapFunction?.let {
                 try {
@@ -39,14 +39,14 @@ class MapInputTask<NI, I, O>(override val innerTask: Task<I, O>, mapFunction: (N
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun restoreCallbacks(from: Task<NI, O>) {
+    override fun restoreCallbacks(from: Task<OI, O>) {
         super.restoreCallbacks(from)
 
         if (from !is MapInputTask<*, *, *>) {
             throw IllegalArgumentException("The passed task must have the same type.")
         }
 
-        mapFunction = from.mapFunction as ((NI) -> I)?
+        mapFunction = from.mapFunction as ((OI) -> I)?
 
         initCallbacks()
     }

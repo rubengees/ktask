@@ -4,9 +4,15 @@ import com.rubengees.ktask.base.BranchTask
 import com.rubengees.ktask.base.Task
 
 /**
- * TODO: Describe class
+ * Task for running the passed [innerTask] asynchronously in it's own thread.
  *
- * @author Ruben Gees.
+ * Note that a raw thread is used for this, so running many tasks simultaneously can lead to slow execution of
+ * individual tasks.
+ *
+ * @param I The type of input.
+ * @param O The type of output.
+ *
+ * @author Ruben Gees
  */
 class AsynchronousTask<I, O>(override val innerTask: Task<I, O>) : BranchTask<I, O, I, O>() {
 
