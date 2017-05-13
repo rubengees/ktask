@@ -53,7 +53,8 @@ class TaskBuilder<I, O, T : Task<I, O>> private constructor(private val currentT
             other: Task<OI, OO>, zipFunction: (O, OO) -> FO,
             awaitLeftResultOnError: Boolean = false,
             awaitRightResultOnError: Boolean = false
-    ) = task(ParallelTask(currentTask, other, zipFunction, awaitLeftResultOnError, awaitRightResultOnError))
+    ) = task(ParallelTask(AsynchronousTask(currentTask), AsynchronousTask(other), zipFunction,
+            awaitLeftResultOnError, awaitRightResultOnError))
 
     /**
      * Runs the previous task in parallel with another given [TaskBuilder].
@@ -64,7 +65,8 @@ class TaskBuilder<I, O, T : Task<I, O>> private constructor(private val currentT
             other: TaskBuilder<OI, OO, T>, zipFunction: (O, OO) -> FO,
             awaitLeftResultOnError: Boolean = false,
             awaitRightResultOnError: Boolean = false
-    ) = task(ParallelTask(currentTask, other.build(), zipFunction, awaitLeftResultOnError, awaitRightResultOnError))
+    ) = task(ParallelTask(AsynchronousTask(currentTask), AsynchronousTask(other.build()), zipFunction,
+            awaitLeftResultOnError, awaitRightResultOnError))
 
     /**
      * Runs the previous task with the given in series (the previous task first).
