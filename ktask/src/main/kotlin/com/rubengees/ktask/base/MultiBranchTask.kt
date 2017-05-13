@@ -69,4 +69,25 @@ abstract class MultiBranchTask<I, O, LI, RI, LO, RO> : BaseTask<I, O>() {
         leftInnerTask.restoreCallbacks(from.leftInnerTask as Task<LI, LO>)
         rightInnerTask.restoreCallbacks(from.rightInnerTask as Task<RI, RO>)
     }
+
+    /**
+     * Exception which holds the cause of failure of a child of a [MultiBranchTask] and the partial result of the
+     * other child.
+     *
+     * @param innerError The error, causing the task to fail.
+     * @property partialResult The result of the other task, which completed successfully.
+     *
+     * @author Ruben Gees
+     */
+    class PartialTaskException(val innerError: Throwable, val partialResult: Any?) : Exception()
+
+    /**
+     * Exception which holds the two causes for a [MultiBranchTask] to fail.
+     *
+     * @param firstInnerError The first error, causing the task to fail.
+     * @property secondInnerError The second error, causing the task to fail.
+     *
+     * @author Ruben Gees
+     */
+    class FullTaskException(val firstInnerError: Throwable, val secondInnerError: Throwable) : Exception()
 }

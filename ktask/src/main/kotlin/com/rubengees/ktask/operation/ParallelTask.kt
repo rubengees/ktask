@@ -2,8 +2,6 @@ package com.rubengees.ktask.operation
 
 import com.rubengees.ktask.base.MultiBranchTask
 import com.rubengees.ktask.base.Task
-import com.rubengees.ktask.util.FullTaskException
-import com.rubengees.ktask.util.PartialTaskException
 
 /**
  * Task for running the passed [leftInnerTask] and [rightInnerTask] in parallel.
@@ -13,9 +11,8 @@ import com.rubengees.ktask.util.PartialTaskException
  *
  * If an error occurs in one of the tasks, the execution is immediately aborted and the error delivered.
  * This behaviour can be altered with the [awaitLeftResultOnError] and [awaitRightResultOnError]. If one of those flags
- * is set. The task waits for the result of specified task. In that case a
- * [com.rubengees.ktask.util.PartialTaskException] is delivered with the data of the other task. If both tasks fail, a
- * [com.rubengees.ktask.util.FullTaskException] is delivered.
+ * is set. The task waits for the result of specified task. In that case a [PartialTaskException] is delivered with the
+ * data of the other task. If both tasks fail, a [FullTaskException] is delivered.
  *
  * @LI The type of input of the left task.
  * @RI The type of input of the right task.
