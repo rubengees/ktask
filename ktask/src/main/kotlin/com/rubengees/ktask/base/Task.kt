@@ -60,6 +60,14 @@ interface Task<I, O> {
     fun freshExecute(input: I)
 
     /**
+     * Serially executes the task and returns the result immediately. The task is cancelled before executing.
+     *
+     * This method is always blocking, even if it contains an [com.rubengees.ktask.operation.AsynchronousTask].
+     * All callbacks are still called, but it is recommended to stick to normal control flow with this method.
+     */
+    fun serialExecute(input: I): O
+
+    /**
      * Cancels the task and its children if present and deletes any data, directly associated with the current
      * execution.
      *

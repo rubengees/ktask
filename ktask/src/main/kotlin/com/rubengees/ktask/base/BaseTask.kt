@@ -1,5 +1,7 @@
 package com.rubengees.ktask.base
 
+import java.util.concurrent.CountDownLatch
+
 /**
  * Base class for all tasks with some common implementation.
  *
@@ -40,6 +42,8 @@ abstract class BaseTask<I, O> : Task<I, O> {
      */
     protected val successCallbacks = mutableListOf<(O) -> Unit>()
 
+    private var serialLock = CountDownLatch(1)
+
     override fun onStart(callback: () -> Unit) = this.apply { startCallbacks.add(callback) }
     override fun onSuccess(callback: (O) -> Unit) = this.apply { successCallbacks.add(callback) }
     override fun onError(callback: (Throwable) -> Unit) = this.apply { errorCallbacks.add(callback) }
@@ -57,6 +61,39 @@ abstract class BaseTask<I, O> : Task<I, O> {
         execute(input)
     }
 
+    override fun serialExecute(input: I): O {
+        serialLock.countDown()
+        serialLock = CountDownLatch(1)
+
+        var result: O? = null
+        var error: Throwable? = null
+
+        val successCallback = { it: O -> result = it }.apply { onSuccess(this) }
+        val errorCallback = { it: Throwable -> error = it }.apply { onError(this) }
+        val finishCallback = { serialLock.countDown() }.apply { onFinish(this) }
+
+        forceExecute(input)
+        serialLock.await()
+
+        successCallbacks -= successCallback
+        errorCallbacks -= errorCallback
+        finishCallbacks -= finishCallback
+
+        if (!isCancelled) {
+            result?.let {
+                return it
+            }
+        }
+
+        if (!isCancelled) {
+            error?.let {
+                throw it
+            }
+        }
+
+        throw RuntimeException("This task has been cancelled.")
+    }
+
     override fun cancel() {
         isCancelled = true
     }
@@ -70,6 +107,8 @@ abstract class BaseTask<I, O> : Task<I, O> {
     }
 
     override fun destroy() {
+        serialLock.countDown()
+
         internalDestroy()
     }
 
