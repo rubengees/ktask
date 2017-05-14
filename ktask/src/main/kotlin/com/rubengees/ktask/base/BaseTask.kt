@@ -98,8 +98,9 @@ abstract class BaseTask<I, O> : Task<I, O> {
     open protected fun finishSuccessful(result: O) {
         if (!isCancelled) {
             successCallbacks.forEach { it.invoke(result) }
-            finishCallbacks.forEach { it.invoke() }
         }
+
+        finishCallbacks.forEach { it.invoke() }
     }
 
     /**
@@ -110,8 +111,9 @@ abstract class BaseTask<I, O> : Task<I, O> {
     open protected fun finishWithError(error: Throwable) {
         if (!isCancelled) {
             errorCallbacks.forEach { it.invoke(error) }
-            finishCallbacks.forEach { it.invoke() }
         }
+
+        finishCallbacks.forEach { it.invoke() }
     }
 
     override fun restoreCallbacks(from: Task<I, O>) {
