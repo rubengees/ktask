@@ -33,7 +33,7 @@ class RetrofitTask<O> : LeafTask<Call<O>, O>() {
             } catch (error: Throwable) {
                 internalCancel()
 
-                finishWithError(error as Exception)
+                finishWithError(error)
             }
         }
     }
