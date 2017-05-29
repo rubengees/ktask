@@ -23,11 +23,15 @@ class MapInputTask<OI, I, O>(override val innerTask: Task<I, O>, mapFunction: (O
     override fun execute(input: OI) {
         start {
             this.mapFunction?.let {
-                try {
-                    innerTask.execute(it.invoke(input))
+                val mappedInput = try {
+                    it.invoke(input)
                 } catch (error: Throwable) {
                     finishWithError(error)
+
+                    return@let
                 }
+
+                innerTask.execute(mappedInput)
             }
         }
     }

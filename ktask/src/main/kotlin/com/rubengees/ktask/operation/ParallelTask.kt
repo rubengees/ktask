@@ -76,11 +76,15 @@ class ParallelTask<LI, RI, LM, RM, O>(override val leftInnerTask: Task<LI, LM>,
                 internalCancel()
 
                 this.zipFunction?.let { function ->
-                    try {
-                        finishSuccessful(function.invoke(it, safeRightResult))
+                    val zippedResult = try {
+                        function.invoke(it, safeRightResult)
                     } catch(error: Throwable) {
                         finishWithError(PartialTaskException(error, safeRightResult))
+
+                        return@let
                     }
+
+                    finishSuccessful(zippedResult)
                 }
             } else if (safeRightError != null) {
                 internalCancel()
@@ -122,11 +126,15 @@ class ParallelTask<LI, RI, LM, RM, O>(override val leftInnerTask: Task<LI, LM>,
                 internalCancel()
 
                 this.zipFunction?.let { function ->
-                    try {
-                        finishSuccessful(function.invoke(safeLeftResult, it))
+                    val zippedResult = try {
+                        function.invoke(safeLeftResult, it)
                     } catch(error: Throwable) {
                         finishWithError(PartialTaskException(error, safeLeftResult))
+
+                        return@let
                     }
+
+                    finishSuccessful(zippedResult)
                 }
             } else if (safeLeftError != null) {
                 internalCancel()

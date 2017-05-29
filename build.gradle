@@ -9,11 +9,11 @@ ext {
     buildToolsVersion = '25.0.3'
 }
 
-def kotlinVersion = '1.1.2-3'
+def kotlinVersion = '1.1.2-4'
 def supportLibraryVersion = '25.3.1'
 
-def retrofitVersion = '2.2.0'
-def moshiVersion = '1.4.0'
+def retrofitVersion = '2.3.0'
+def moshiVersion = '1.5.0'
 def kotterknifeVersion = '0.1.0-SNAPSHOT'
 def leakCanaryVersion = '1.5.1'
 
@@ -27,6 +27,7 @@ ext.deps = [
         retrofit           : "com.squareup.retrofit2:retrofit:$retrofitVersion",
         retrofitMoshi      : "com.squareup.retrofit2:converter-moshi:$retrofitVersion",
         moshi              : "com.squareup.moshi:moshi:$moshiVersion",
+        moshiKotlin        : "com.squareup.moshi:moshi-kotlin:$moshiVersion",
 
         kotterknife        : "com.jakewharton:kotterknife:$kotterknifeVersion",
 
@@ -41,11 +42,11 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.1'
+        classpath 'com.android.tools.build:gradle:2.3.2'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.2-3"
-        classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.9.13"
-        classpath "org.jetbrains.dokka:dokka-android-gradle-plugin:0.9.13"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.2-4"
+        classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.9.14"
+        classpath "org.jetbrains.dokka:dokka-android-gradle-plugin:0.9.14"
     }
 }
 
@@ -60,10 +61,11 @@ allprojects {
 }
 
 subprojects {
+    def appPlugin = "com.android.build.gradle.AppPlugin"
+    def libraryPlugin = "com.android.build.gradle.LibraryPlugin"
+
     project.plugins.whenPluginAdded { plugin ->
-        if ("com.android.build.gradle.AppPlugin" == plugin.class.name) {
-            project.android.dexOptions.preDexLibraries = rootProject.ext.preDexLibs
-        } else if ("com.android.build.gradle.LibraryPlugin" == plugin.class.name) {
+        if (appPlugin == plugin.class.name || libraryPlugin == plugin.class.name) {
             project.android.dexOptions.preDexLibraries = rootProject.ext.preDexLibs
         }
     }

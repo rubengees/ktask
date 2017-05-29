@@ -1,5 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'org.jetbrains.dokka-android'
 apply plugin: 'com.github.dcendents.android-maven'
 
 group = 'com.github.rubengees'
@@ -32,6 +33,18 @@ task sourcesJar(type: Jar) {
     from android.sourceSets.main.kotlin.srcDirs
 }
 
+task dokkaJavadoc(type: org.jetbrains.dokka.gradle.DokkaTask) {
+    outputFormat = 'javadoc'
+    outputDirectory = file("$buildDir/javadoc")
+    sourceDirs = files('src/main/kotlin')
+}
+
+task javadocJar(type: Jar, dependsOn: dokkaJavadoc) {
+    classifier = 'javadoc'
+    from file("$buildDir/javadoc")
+}
+
 artifacts {
     archives sourcesJar
+    archives javadocJar
 }

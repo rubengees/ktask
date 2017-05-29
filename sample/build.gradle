@@ -3,14 +3,22 @@ apply plugin: 'application'
 
 mainClassName = 'com.rubengees.ktask.sample.Main'
 
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.rubengees.ktask.sample.Main'
+    }
+
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
 dependencies {
     compile deps.kotlinStdlib
 
     compile deps.retrofit
     compile deps.retrofitMoshi
     compile deps.moshi
+    compile deps.moshiKotlin
 
-    compile project(':ktask')
     compile project(':ktask-retrofit')
     compile project(':sample-common')
 }

@@ -19,11 +19,15 @@ abstract class WorkerTask<I, O> : LeafTask<I, O>() {
         start {
             isWorking = true
 
-            try {
-                finishSuccessful(work(input))
+            val result = try {
+                work(input)
             } catch(error: Throwable) {
                 finishWithError(error)
+
+                return@start
             }
+
+            finishSuccessful(result)
         }
     }
 

@@ -58,11 +58,15 @@ class StreamTask<LI, LO, RI, RO>(override val leftInnerTask: Task<LI, LO>,
     private fun initCallbacks() {
         leftInnerTask.onSuccess {
             this.mapFunction?.let { function ->
-                try {
-                    rightInnerTask.execute(function.invoke(it))
+                val mappedInput = try {
+                    function.invoke(it)
                 } catch(exception: Exception) {
                     finishWithError(exception)
+
+                    return@let
                 }
+
+                rightInnerTask.execute(mappedInput)
             }
         }
 

@@ -48,11 +48,15 @@ class MapTask<I, M, O>(override val innerTask: Task<I, M>, mapFunction: (M) -> O
     private fun initCallbacks() {
         innerTask.onSuccess {
             this.mapFunction?.let { function ->
-                try {
-                    finishSuccessful(function.invoke(it))
+                val mappedResult = try {
+                    function.invoke(it)
                 } catch(error: Throwable) {
                     finishWithError(error)
+
+                    return@let
                 }
+
+                finishSuccessful(mappedResult)
             }
         }
 
