@@ -17,7 +17,7 @@ And this to your module-level `build.gradle`:
 
 ```groovy
 dependencies {
-    compile "com.github.rubengees.ktask:ktask:0.3.4"
+    compile "com.github.rubengees.ktask:ktask:0.4.0"
 }
 ```
 
