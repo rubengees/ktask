@@ -1,6 +1,7 @@
-apply plugin: "kotlin"
-apply plugin: 'maven'
+apply plugin: 'kotlin'
+
 apply plugin: 'org.jetbrains.dokka'
+apply plugin: 'maven-publish'
 
 group = 'com.github.rubengees'
 
@@ -11,22 +12,31 @@ dependencies {
     compile project(':ktask')
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
 task dokkaJavadoc(type: org.jetbrains.dokka.gradle.DokkaTask) {
     outputFormat = 'javadoc'
     outputDirectory = javadoc.destinationDir
 }
 
+task sourceJar(type: Jar, dependsOn: classes) {
+    from sourceSets.main.allSource
+}
+
 task javadocJar(type: Jar, dependsOn: dokkaJavadoc) {
-    classifier = 'javadoc'
     from javadoc.destinationDir
 }
 
-artifacts {
-    archives sourcesJar
-    archives javadocJar
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            artifact sourceJar {
+                classifier "sources"
+            }
+
+            artifact javadocJar {
+                classifier "javadoc"
+            }
+        }
+    }
 }
