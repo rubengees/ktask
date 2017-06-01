@@ -1,2 +1,2 @@
 install:
-   - gradle clean -xtest -xlint publishToMavenLocal
+   - ./gradlew clean -xtest -xlint publishToMavenLocal
