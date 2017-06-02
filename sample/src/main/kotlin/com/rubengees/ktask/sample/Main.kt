@@ -4,8 +4,6 @@ package com.rubengees.ktask.sample
 
 import com.rubengees.ktask.retrofit.asyncRetrofitTask
 import com.rubengees.ktask.util.TaskBuilder
-import com.squareup.moshi.KotlinJsonAdapterFactory
-import com.squareup.moshi.Moshi
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
@@ -15,9 +13,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 fun main(args: Array<String>) {
     val retrofit = Retrofit.Builder()
             .baseUrl("https://api.github.com/")
-            .addConverterFactory(MoshiConverterFactory.create(Moshi.Builder()
-                    .add(KotlinJsonAdapterFactory())
-                    .build()))
+            .addConverterFactory(MoshiConverterFactory.create())
             .build()
 
     val api = retrofit.create(GitHubApi::class.java)

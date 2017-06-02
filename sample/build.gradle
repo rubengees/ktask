@@ -9,7 +9,6 @@ dependencies {
     compile deps.retrofit
     compile deps.retrofitMoshi
     compile deps.moshi
-    compile deps.moshiKotlin
 
     compile project(':ktask-retrofit')
     compile project(':sample-common')

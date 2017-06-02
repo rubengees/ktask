@@ -36,7 +36,6 @@ dependencies {
     compile deps.retrofit
     compile deps.retrofitMoshi
     compile deps.moshi
-    compile deps.moshiKotlin
 
     compile deps.kotterknife
 

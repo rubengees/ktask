@@ -27,7 +27,6 @@ ext.deps = [
         retrofit           : "com.squareup.retrofit2:retrofit:$retrofitVersion",
         retrofitMoshi      : "com.squareup.retrofit2:converter-moshi:$retrofitVersion",
         moshi              : "com.squareup.moshi:moshi:$moshiVersion",
-        moshiKotlin        : "com.squareup.moshi:moshi-kotlin:$moshiVersion",
 
         kotterknife        : "com.jakewharton:kotterknife:$kotterknifeVersion",
 

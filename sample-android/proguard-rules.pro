@@ -1,15 +1,21 @@
-# Glide
--keep public class * implements com.bumptech.glide.module.GlideModule
--keep public enum com.bumptech.glide.load.resource.bitmap.ImageHeaderParser$** {
-    **[] $VALUES;
-    public *;
-}
+# Suppress warnings about duplicate classes.
+-dontnote android.net.http.*
+-dontnote org.apache.commons.codec.**
+-dontnote org.apache.http.**
 
 # OkHttp/Okio/Retrofit
 -dontwarn okio.**
 -dontwarn javax.annotation.**
 -dontnote retrofit2.Platform
 -dontwarn retrofit2.Platform$Java8
+
+-keepclasseswithmembers class * {
+    @retrofit2.http.* <methods>;
+}
+
+-keepclasseswithmembers interface * {
+    @retrofit2.http.* <methods>;
+}
 
 # Workaround for bug in kotlin-reflect
 # See (https://stackoverflow.com/questions/44161717/proguard-and-kotlin-reflect-kotlin-annotations)
