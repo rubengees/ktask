@@ -12,11 +12,13 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import butterknife.bindView
+import com.rubengees.ktask.android.AndroidLifecycleTask
 import com.rubengees.ktask.android.bindToLifecycle
 import com.rubengees.ktask.retrofit.asyncRetrofitTask
 import com.rubengees.ktask.sample.RepositoryInfo
 import com.rubengees.ktask.sample.Utils
 import com.rubengees.ktask.util.TaskBuilder
+import retrofit2.Call
 
 /**
  * TODO: Describe class
@@ -33,8 +35,22 @@ class MainFragment : Fragment() {
         }
     }
 
-    private val task by lazy {
-        TaskBuilder.asyncRetrofitTask<RepositoryInfo>()
+    private lateinit var task: AndroidLifecycleTask<Call<RepositoryInfo>, RepositoryInfo>
+    private lateinit var adapter: RepositoryAdapter
+
+    private var listState: Parcelable? = null
+
+    private val progress: SwipeRefreshLayout by bindView(R.id.progress)
+    private val content: RecyclerView by bindView(R.id.content)
+
+    private val errorContainer: ViewGroup by bindView(R.id.errorContainer)
+    private val errorText: TextView by bindView(R.id.errorText)
+    private val errorButton: Button by bindView(R.id.errorButton)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        task = TaskBuilder.asyncRetrofitTask<RepositoryInfo>()
                 .cache()
                 .bindToLifecycle(this)
                 .onInnerStart {
@@ -61,21 +77,6 @@ class MainFragment : Fragment() {
                     }
                 }
                 .build()
-    }
-
-    private lateinit var adapter: RepositoryAdapter
-
-    private var listState: Parcelable? = null
-
-    private val progress: SwipeRefreshLayout by bindView(R.id.progress)
-    private val content: RecyclerView by bindView(R.id.content)
-
-    private val errorContainer: ViewGroup by bindView(R.id.errorContainer)
-    private val errorText: TextView by bindView(R.id.errorText)
-    private val errorButton: Button by bindView(R.id.errorButton)
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
 
         adapter = RepositoryAdapter()
         listState = savedInstanceState?.getParcelable(LIST_STATE)

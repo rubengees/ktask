@@ -41,7 +41,7 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
     private var context: WeakReference<Any?>
 
     @Volatile
-    private var canDeliver = false
+    private var fragmentHasView = false
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -90,16 +90,8 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
         }
 
         val lifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
-            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-                if (activity == context) {
-                    canDeliver = true
-                }
-            }
-
             override fun onActivityDestroyed(activity: Activity) {
                 if (activity === context) {
-                    canDeliver = false
-
                     if (activity.isChangingConfigurations) {
                         retainingDestroy()
                     } else {
@@ -110,6 +102,7 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
                 }
             }
 
+            override fun onActivityCreated(activity: Activity?, savedInstanceState: Bundle?) {}
             override fun onActivityStarted(activity: Activity) {}
             override fun onActivityResumed(activity: Activity) {}
             override fun onActivityPaused(activity: Activity) {}
@@ -154,27 +147,12 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
             override fun onFragmentViewCreated(fragmentManager: FragmentManager?, fragment: Fragment?, view: View?,
                                                savedInstanceState: Bundle?) {
                 if (fragment === context) {
-                    canDeliver = true
-                }
-            }
-
-            override fun onFragmentActivityCreated(fragmentManager: FragmentManager?, fragment: Fragment?,
-                                                   savedInstanceState: Bundle?) {
-                if (fragment === context) {
-                    canDeliver = true
-                }
-            }
-
-            override fun onFragmentViewDestroyed(fragmentManager: FragmentManager?, fragment: Fragment?) {
-                if (fragment === context) {
-                    canDeliver = false
+                    fragmentHasView = true
                 }
             }
 
             override fun onFragmentDestroyed(fragmentManager: FragmentManager?, fragment: Fragment?) {
                 if (fragment === context) {
-                    canDeliver = false
-
                     if (fragment.activity?.isChangingConfigurations ?: false) {
                         retainingDestroy()
                     } else {
@@ -244,8 +222,21 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
     }
 
     private fun safelyDeliver(action: () -> Unit) {
-        if (!isCancelled && canDeliver) {
-            handler.post { action.invoke() }
+        if (!isCancelled) {
+            val currentContext = context.get()
+            val canDeliver = when (currentContext) {
+                is FragmentActivity -> !currentContext.isFinishing
+                is Fragment -> {
+                    val isViewSafe = if (fragmentHasView) currentContext.view != null else true
+
+                    isViewSafe && !(currentContext.activity?.isFinishing ?: true)
+                }
+                else -> false
+            }
+
+            if (canDeliver) {
+                handler.post { action.invoke() }
+            }
         }
     }
 
