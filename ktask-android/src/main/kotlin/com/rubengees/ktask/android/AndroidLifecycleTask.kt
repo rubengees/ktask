@@ -13,7 +13,6 @@ import android.support.v4.app.FragmentManager
 import android.view.View
 import com.rubengees.ktask.base.BranchTask
 import com.rubengees.ktask.base.Task
-import java.lang.ref.WeakReference
 
 /**
  * Task for working in a safe manner with the Android Lifecycle.
@@ -38,10 +37,9 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
         get() = workerFragment.innerTask ?: throw IllegalStateException("innerTask cannot be null")
 
     private val workerFragment: RetainedWorkerFragment<I, O>
-    private var context: WeakReference<Any?>
 
     @Volatile
-    private var fragmentHasView = false
+    private var canDeliver = false
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -68,8 +66,6 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
      */
     @SuppressLint("CommitTransaction")
     constructor(context: FragmentActivity, innerTask: Task<I, O>, tag: String) {
-        this.context = WeakReference(context)
-
         val existingWorker = context.supportFragmentManager.findFragmentByTag(tag)
 
         @Suppress("UNCHECKED_CAST")
@@ -90,6 +86,12 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
         }
 
         val lifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
+            override fun onActivityCreated(activity: Activity?, savedInstanceState: Bundle?) {
+                if (activity === context) {
+                    canDeliver = true
+                }
+            }
+
             override fun onActivityDestroyed(activity: Activity) {
                 if (activity === context) {
                     if (activity.isChangingConfigurations) {
@@ -102,7 +104,6 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
                 }
             }
 
-            override fun onActivityCreated(activity: Activity?, savedInstanceState: Bundle?) {}
             override fun onActivityStarted(activity: Activity) {}
             override fun onActivityResumed(activity: Activity) {}
             override fun onActivityPaused(activity: Activity) {}
@@ -122,8 +123,6 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
      * @param tag The tag of this task. This has to be unique.
      */
     constructor(context: Fragment, innerTask: Task<I, O>, tag: String) {
-        this.context = WeakReference(context)
-
         val existingWorker = context.childFragmentManager.findFragmentByTag(tag)
 
         @Suppress("UNCHECKED_CAST")
@@ -147,12 +146,27 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
             override fun onFragmentViewCreated(fragmentManager: FragmentManager?, fragment: Fragment?, view: View?,
                                                savedInstanceState: Bundle?) {
                 if (fragment === context) {
-                    fragmentHasView = true
+                    canDeliver = true
+                }
+            }
+
+            override fun onFragmentActivityCreated(fragmentManager: FragmentManager?, fragment: Fragment?,
+                                                   savedInstanceState: Bundle?) {
+                if (fragment === context) {
+                    canDeliver = true
+                }
+            }
+
+            override fun onFragmentViewDestroyed(fragmentManager: FragmentManager?, fragment: Fragment?) {
+                if (fragment === context) {
+                    canDeliver = false
                 }
             }
 
             override fun onFragmentDestroyed(fragmentManager: FragmentManager?, fragment: Fragment?) {
                 if (fragment === context) {
+                    canDeliver = false
+
                     if (fragment.activity?.isChangingConfigurations ?: false) {
                         retainingDestroy()
                     } else {
@@ -209,32 +223,9 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
         }
     }
 
-    override fun retainingDestroy() {
-        super.retainingDestroy()
-
-        context.clear()
-    }
-
-    override fun destroy() {
-        super.destroy()
-
-        context.clear()
-    }
-
     private fun safelyDeliver(action: () -> Unit) {
         if (!isCancelled) {
             handler.post {
-                val currentContext = context.get()
-                val canDeliver = when (currentContext) {
-                    is FragmentActivity -> !currentContext.isFinishing
-                    is Fragment -> {
-                        val isViewSafe = if (fragmentHasView) currentContext.view != null else true
-
-                        isViewSafe && !(currentContext.activity?.isFinishing ?: true)
-                    }
-                    else -> false
-                }
-
                 if (canDeliver) {
                     action.invoke()
                 }
