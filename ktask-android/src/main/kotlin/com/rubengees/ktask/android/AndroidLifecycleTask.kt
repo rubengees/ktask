@@ -40,6 +40,9 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
     private val workerFragment: RetainedWorkerFragment<I, O>
     private var context: WeakReference<Any?>
 
+    @Volatile
+    private var canDeliver = false
+
     private val handler = Handler(Looper.getMainLooper())
 
     private companion object {
@@ -87,15 +90,16 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
         }
 
         val lifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
-            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
-            override fun onActivityStarted(activity: Activity) {}
-            override fun onActivityResumed(activity: Activity) {}
-            override fun onActivityPaused(activity: Activity) {}
-            override fun onActivityStopped(activity: Activity) {}
-            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle?) {}
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+                if (activity == context) {
+                    canDeliver = true
+                }
+            }
 
             override fun onActivityDestroyed(activity: Activity) {
                 if (activity === context) {
+                    canDeliver = false
+
                     if (activity.isChangingConfigurations) {
                         retainingDestroy()
                     } else {
@@ -105,6 +109,12 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
                     activity.application.unregisterActivityLifecycleCallbacks(this)
                 }
             }
+
+            override fun onActivityStarted(activity: Activity) {}
+            override fun onActivityResumed(activity: Activity) {}
+            override fun onActivityPaused(activity: Activity) {}
+            override fun onActivityStopped(activity: Activity) {}
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle?) {}
         }
 
         context.application.registerActivityLifecycleCallbacks(lifecycleCallbacks)
@@ -141,15 +151,37 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
         }
 
         val lifecycleCallbacks = object : FragmentManager.FragmentLifecycleCallbacks() {
-            override fun onFragmentDestroyed(fragmentManager: FragmentManager, fragment: Fragment) {
+            override fun onFragmentViewCreated(fragmentManager: FragmentManager?, fragment: Fragment?, view: View?,
+                                               savedInstanceState: Bundle?) {
                 if (fragment === context) {
-                    if (fragment.activity.isChangingConfigurations) {
+                    canDeliver = true
+                }
+            }
+
+            override fun onFragmentActivityCreated(fragmentManager: FragmentManager?, fragment: Fragment?,
+                                                   savedInstanceState: Bundle?) {
+                if (fragment === context) {
+                    canDeliver = true
+                }
+            }
+
+            override fun onFragmentViewDestroyed(fragmentManager: FragmentManager?, fragment: Fragment?) {
+                if (fragment === context) {
+                    canDeliver = false
+                }
+            }
+
+            override fun onFragmentDestroyed(fragmentManager: FragmentManager?, fragment: Fragment?) {
+                if (fragment === context) {
+                    canDeliver = false
+
+                    if (fragment.activity?.isChangingConfigurations ?: false) {
                         retainingDestroy()
                     } else {
                         destroy()
                     }
 
-                    fragmentManager.unregisterFragmentLifecycleCallbacks(this)
+                    fragmentManager?.unregisterFragmentLifecycleCallbacks(this)
                 }
             }
         }
@@ -212,17 +244,8 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
     }
 
     private fun safelyDeliver(action: () -> Unit) {
-        if (!isCancelled) {
-            val currentContext = context.get()
-            val canDeliver = when (currentContext) {
-                is FragmentActivity -> !currentContext.isFinishing
-                is Fragment -> currentContext.isResumed && !(currentContext.activity?.isFinishing ?: true)
-                else -> false
-            }
-
-            if (canDeliver) {
-                handler.post { action.invoke() }
-            }
+        if (!isCancelled && canDeliver) {
+            handler.post { action.invoke() }
         }
     }
 
