@@ -223,19 +223,21 @@ class AndroidLifecycleTask<I, O> : BranchTask<I, O, I, O> {
 
     private fun safelyDeliver(action: () -> Unit) {
         if (!isCancelled) {
-            val currentContext = context.get()
-            val canDeliver = when (currentContext) {
-                is FragmentActivity -> !currentContext.isFinishing
-                is Fragment -> {
-                    val isViewSafe = if (fragmentHasView) currentContext.view != null else true
+            handler.post {
+                val currentContext = context.get()
+                val canDeliver = when (currentContext) {
+                    is FragmentActivity -> !currentContext.isFinishing
+                    is Fragment -> {
+                        val isViewSafe = if (fragmentHasView) currentContext.view != null else true
 
-                    isViewSafe && !(currentContext.activity?.isFinishing ?: true)
+                        isViewSafe && !(currentContext.activity?.isFinishing ?: true)
+                    }
+                    else -> false
                 }
-                else -> false
-            }
 
-            if (canDeliver) {
-                handler.post { action.invoke() }
+                if (canDeliver) {
+                    action.invoke()
+                }
             }
         }
     }
