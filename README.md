@@ -1,6 +1,6 @@
 # KTask
 
-Painless tasks for the JVM and Android, written in Kotlin.
+This is just a project for personal testing, use [RxJava](https://github.com/ReactiveX/RxJava) instead.
 
 ### Including in your project
 
